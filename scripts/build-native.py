@@ -3,6 +3,7 @@
 """Build offline preview installers, without Gradle or third-party UI runtimes."""
 import argparse
 import hashlib
+import json
 import os
 from pathlib import Path
 import plistlib
@@ -14,7 +15,7 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.2.2'
+VERSION = json.loads((ROOT / 'package.json').read_text())['version']
 
 def run(*args):
     print('+', ' '.join(str(a) for a in args), flush=True)
@@ -50,7 +51,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '4',
+        'CFBundleVersion': '5',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
@@ -92,7 +93,7 @@ def macos_in_stage(args, stage):
     if not applications.is_symlink():
         applications.symlink_to('/Applications', target_is_directory=True)
     (stage / '安装说明.txt').write_text(
-        '乳腺癌剂量计算 0.2.2 内置方案测试版\n\n'
+        f'乳腺癌剂量计算 {VERSION} 内置方案测试版\n\n'
         '适用于 Apple 芯片 Mac，macOS 13 或更新版本。\n'
         '将应用拖入 Applications。此包只有本地 ad-hoc 签名，未获得 Apple Developer ID 签名和公证。\n'
         '如系统阻止打开，请在系统设置 → 隐私与安全性中查看此应用的打开选项。请勿关闭系统安全功能。\n\n'
@@ -171,12 +172,24 @@ def android(args):
     run(tools / 'aapt', 'dump', 'badging', apk)
     return apk
 
+def windows(args):
+    build = args.work / 'windows'
+    published = build / 'publish'
+    run(args.dotnet, 'publish', ROOT / 'apps/windows/ChemoDose.Windows.csproj',
+        '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true',
+        '--artifacts-path', build / 'artifacts', '-o', published,
+        '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true')
+    exe = args.output / f'ChemoDose-{VERSION}-windows-x64.exe'
+    shutil.copyfile(published / 'ChemoDose.exe', exe)
+    return exe
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--platform', choices=['all', 'android', 'macos'], default='all')
+    parser.add_argument('--platform', choices=['all', 'android', 'macos', 'windows'], default='all')
     parser.add_argument('--node', default=shutil.which('node') or 'node')
     parser.add_argument('--sdk', type=Path, default=os.environ.get('ANDROID_HOME'))
     parser.add_argument('--java-home', type=Path, default=os.environ.get('JAVA_HOME'))
+    parser.add_argument('--dotnet', default=shutil.which('dotnet') or 'dotnet')
     parser.add_argument('--work', type=Path, default=ROOT / 'build')
     parser.add_argument('--output', type=Path, default=ROOT / 'dist')
     args = parser.parse_args()
@@ -190,6 +203,8 @@ def main():
         artifacts.append(android(args))
     if args.platform in ('all', 'macos'):
         artifacts.append(macos(args))
+    if args.platform in ('all', 'windows'):
+        artifacts.append(windows(args))
     for artifact in artifacts:
         print(hashlib.sha256(artifact.read_bytes()).hexdigest(), artifact.name)
 

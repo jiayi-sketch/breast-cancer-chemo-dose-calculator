@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var window: NSWindow!
     var webView: WKWebView!
     var webRoot: URL!
+    let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未知"
     let testing = CommandLine.arguments.contains("--self-test")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -33,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         webView.allowsBackForwardNavigationGestures = false
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1180, height: 840),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "乳腺癌剂量计算 · 内置方案版 0.2.2"
+        window.title = "乳腺癌剂量计算 · 内置方案版 \(appVersion)"
         window.minSize = NSSize(width: 820, height: 650)
         window.contentView = webView
         window.center()
@@ -45,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     @objc func showAbout() {
         let alert = NSAlert()
-        alert.messageText = "乳腺癌剂量计算 0.2.2"
+        alert.messageText = "乳腺癌剂量计算 \(appVersion)"
         alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n输入仅保存在本次窗口内存中；未接入报告自动匹配。"
         alert.runModal()
     }

@@ -2,7 +2,7 @@
 
 ## 依赖
 
-Node.js 24+、Python 3.9+；Android SDK Platform 35、Build Tools 35.0.0、JDK（本次 Temurin 25）；Mac 使用 Apple Command Line Tools（本次 Swift 6.3.3），目标 arm64。
+Node.js 24+、Python 3.9+；Android SDK Platform 35、Build Tools 35.0.0、JDK（本次 Temurin 25）；Mac 使用 Apple Command Line Tools（本次 Swift 6.3.3），目标 arm64。Windows 使用 .NET SDK 10.0.401、Microsoft.Web.WebView2 1.0.4258.31，输出 win-x64 自包含单文件 EXE。
 
 开发依赖通过 npm install 安装：Happy DOM 20.8.4、TypeScript 5.9.3。它们不打入应用。
 
@@ -12,16 +12,17 @@ python3 scripts/build-native.py \
   --sdk /absolute/path/to/android-sdk \
   --java-home /absolute/path/to/jdk/Contents/Home \
   --work /absolute/path/to/build-work \
+  --dotnet /absolute/path/to/dotnet \
   --output /absolute/path/to/releases
 ```
 
---node 可从 PATH 获取，--sdk 可用 ANDROID_HOME，--java-home 可用 JAVA_HOME。默认工作目录 build、输出目录 dist。单端用 --platform android 或 --platform macos。
+--node 可从 PATH 获取，--sdk 可用 ANDROID_HOME，--java-home 可用 JAVA_HOME。默认工作目录 build、输出目录 dist。单端用 --platform android、macos 或 windows；默认 all 构建三个平台。Windows 支持从 Mac 交叉编译（EnableWindowsTargeting），运行验收须在 Windows 上进行。
 
 先生成共享网页，再放入原生外壳，无需 Gradle、Electron 或网络页面。类型去除不是类型检查，请另运行 npm run typecheck。
 
 ## Android
 
-aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 4，versionName 0.2.2-preview，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
+aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 5，versionName 1.0.1，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
 
 首次构建在工作目录 signing 下生成测试私钥和随机密码。**后续同包名升级须保存并沿用此密钥**，删除工作目录前请安全备份 signing。它不属于源码，不能上传 GitHub。
 
@@ -40,9 +41,29 @@ Cocoa / WKWebView 原生 arm64 外壳，macOS 13+，非持久化 WebView。当�
 
 ## 源码分发
 
-APK/DMG 与对应源码、LICENSE、构建说明一起交付。源码 ZIP 不包含 SDK、JDK、Node、node_modules、原 Windows EXE、指南 PDF 或签名私钥。
+EXE/APK/DMG 与对应源码、LICENSE、构建说明一起交付。源码 ZIP 不包含 SDK、JDK、Node、node_modules、原 Windows EXE、指南 PDF 或签名私钥。
 
-## Windows 原程序声明副本
+## Windows 1.0.1
+
+Windows Forms + WebView2 原生外壳，与 Mac、安卓复用全部 9 个网页资源、同一方案目录和计算核心。发布的 EXE 内置 .NET 10 运行时与 WebView2 SDK/loader；无需用户另装 .NET，但需要微软 Evergreen WebView2 Runtime。推荐 Windows 11 x64，兼容 Windows 10 22H2 x64；不提供 Windows 7、32 位或 Windows ARM 原生版本。
+
+页面通过内嵌资源响应加载，不创建本地 HTTP 服务，不访问外部网页。导航仅允许内嵌主页和自定义单药页；外部请求、子框架、弹窗、下载和权限申请被拒绝。WebView 使用 InPrivate 模式与每次启动独立的临时 profile，应用不写入病例参数；框架可能在系统临时目录解包组件。复制消息经过来源和长度检查，界面等待原生剪贴板回执后提示成功。第三方运行时许可原文在 apps/windows/licenses 中，EXE 的“帮助 → 第三方许可”可查看。
+
+```sh
+python3 scripts/build-native.py --platform windows --node /path/to/node --dotnet /path/to/dotnet --work /path/to/work --output /path/to/releases
+```
+
+在 Windows 上可运行：
+
+```powershell
+.\ChemoDose-1.0.1-windows-x64.exe --self-test --test-report windows-self-test.json
+```
+
+自检使用合成数据，验证启动、版本、内置 TCbHP 计算、复制回执、长方案名边框和切换时旧结果清除；写入 JSON 与窗口内容截图，不读取真实病例。GitHub Windows workflow 提供相同验证。自检通过不代表临床验证或全部 Windows 设备兼容性。当前无 Authenticode 代码签名。
+
+微软参考：[跨平台 Windows 构建](https://learn.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1100)、[单文件分发](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview)、[WebView2 Runtime 分发](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)。
+
+## 历史 Windows 原程序声明副本
 
 Windows 文件保留原 v3.0.2 的功能和方案内容，仅替换已有学术交流/作者标签。脚本静态改写一个 Python 3.8 marshal 字符串并重建归档偏移，不执行 EXE，不重新编译原项目。第三方运行时和启动器原样保留。
 
@@ -56,4 +77,4 @@ python3 scripts/update-windows-notice.py /path/to/original.exe /path/to/ChemoDos
 
 python3 scripts/build-catalogue.py 从历史候选文本以 AST 白名单读取声明数据，应用已经对照 PDF 记录的修正，生成 data/catalogue.json。常规 native 构建使用已检入的目录；不会联网读指南。
 
-node scripts/build-web.mjs 生成 core.browser.js、catalogue.browser.js 和 catalogue-engine.browser.js。两端复制同一组网页文件。node scripts/export-catalogue-review.mjs 生成供人工复核的 Markdown 核对表。修改数据时要更新对应独立测试，并重新生成浏览器脚本与核对表。
+node scripts/build-web.mjs 生成 core.browser.js、catalogue.browser.js 和 catalogue-engine.browser.js。三端使用同一组网页文件，Windows 以程序集资源内嵌。node scripts/export-catalogue-review.mjs 生成供人工复核的 Markdown 核对表。修改数据时要更新对应独立测试，并重新生成浏览器脚本与核对表。

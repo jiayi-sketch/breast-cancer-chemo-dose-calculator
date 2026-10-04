@@ -61,7 +61,7 @@
     metadata('核心', result.engineVersion + ' / 人工输入规则');
     el('raw-result').textContent = JSON.stringify(result, null, 2);
     current = { result: result, name: name, reference: reference, reviewer: reviewer,
-      summary: ['乳腺癌剂量计算工具 · 测试版 0.2.2', '计算项目：' + name,
+      summary: ['乳腺癌剂量计算工具 · 测试版 1.0.1', '计算项目：' + name,
         result.quantities.map(function(q){return labels[q.role] + '：' + q.valueMg.toFixed(2) + ' mg' + (q.schedule ? '；' + q.schedule : '');}).join('\n'),
         formula(result), '计算依据：' + reference, '核对人：' + reviewer,
         '完整数值（mg）：' + result.quantities.map(function(q){return String(q.valueMg);}).join(' / '),
@@ -109,6 +109,18 @@
       window.webkit.messageHandlers.copySummary.postMessage(value); notify('核对摘要已复制'); return;
     }
     if (window.AndroidBridge && window.AndroidBridge.copySummary) { window.AndroidBridge.copySummary(value); notify('核对摘要已复制'); return; }
+    if (window.chrome && window.chrome.webview) {
+      var bridge = window.chrome.webview, requestId = crypto.randomUUID();
+      var reply = function(e) {
+        if (!e.data || e.data.type !== 'copySummaryResult' || e.data.requestId !== requestId) return;
+        bridge.removeEventListener('message', reply); clearTimeout(timeout);
+        notify(e.data.ok ? '核对摘要已复制' : '复制失败，请在完整记录中手动复制');
+      };
+      var timeout = setTimeout(function(){bridge.removeEventListener('message', reply); notify('复制未完成，请手动复制');}, 5000);
+      bridge.addEventListener('message', reply);
+      bridge.postMessage({type:'copySummary', value:value, requestId:requestId});
+      notify('正在复制核对摘要…'); return;
+    }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(value).then(function(){notify('核对摘要已复制');},function(){notify('复制失败，请在完整记录中手动复制');});
     } else {

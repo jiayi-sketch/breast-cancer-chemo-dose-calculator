@@ -21,6 +21,28 @@ function setup(t) {
   t.after(()=>w.happyDOM.abort());
   return {w,el,input,select,fill,calculate,result};
 }
+test('Windows copy reports native acknowledgement and cannot copy an invalidated result', t => {
+  const {w, el, fill, calculate, input} = setup(t);
+  const sent = [], listeners = new Set();
+  w.chrome = {webview: {
+    postMessage: value => sent.push(value),
+    addEventListener: (_, handler) => listeners.add(handler),
+    removeEventListener: (_, handler) => listeners.delete(handler)
+  }};
+  fill(); calculate(); el('copy').click();
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].value, /150\.00 mg/);
+  assert.match(el('message').textContent, /正在复制/);
+  for (const fn of listeners) fn({data:{type:'copySummaryResult',requestId:'unrelated',ok:true}});
+  assert.match(el('message').textContent, /正在复制/);
+  for (const fn of [...listeners]) fn({data:{type:'copySummaryResult',requestId:sent[0].requestId,ok:true}});
+  assert.match(el('message').textContent, /已复制/);
+  el('copy').click();
+  for (const fn of [...listeners]) fn({data:{type:'copySummaryResult',requestId:sent[1].requestId,ok:false}});
+  assert.match(el('message').textContent, /复制失败/);
+  input('weight', '90'); el('copy').click();
+  assert.equal(sent.length, 2);
+});
 test('launch opens a populated built-in regimen with source, dose, schedule and courses', t=>{
   const {w,el}=setup(t);
   assert.equal(w.ChemoAppReady,true);

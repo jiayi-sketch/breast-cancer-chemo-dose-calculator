@@ -39,3 +39,8 @@ Thumbs.db
 
 # Local recovery intermediates
 recovery-work/
+
+# .NET build intermediates
+**/bin/
+**/obj/
+.artifacts/

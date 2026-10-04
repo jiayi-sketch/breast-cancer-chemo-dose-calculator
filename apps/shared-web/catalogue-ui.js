@@ -146,6 +146,18 @@
     const value = engine.summaryText(cat, current);
     if (window.webkit?.messageHandlers?.copySummary) { window.webkit.messageHandlers.copySummary.postMessage(value); message('核对单已复制。', 'success'); }
     else if (window.AndroidBridge?.copySummary) { window.AndroidBridge.copySummary(value); message('核对单已复制。', 'success'); }
+    else if (window.chrome?.webview) {
+      const bridge = window.chrome.webview, requestId = crypto.randomUUID();
+      const reply = e => {
+        if (e.data?.type !== 'copySummaryResult' || e.data.requestId !== requestId) return;
+        bridge.removeEventListener('message', reply); clearTimeout(timeout);
+        message(e.data.ok ? '核对单已复制。' : '复制失败，可展开完整记录手动复制。', e.data.ok ? 'success' : 'error');
+      };
+      const timeout = setTimeout(() => { bridge.removeEventListener('message', reply); message('复制未完成，可展开完整记录手动复制。', 'error'); }, 5000);
+      bridge.addEventListener('message', reply);
+      bridge.postMessage({type: 'copySummary', value, requestId});
+      message('正在复制核对单…');
+    }
     else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(() => message('核对单已复制。', 'success'), () => message('复制失败，可展开完整记录手动复制。', 'error'));
     else message('请展开完整记录，选中文本复制。');
   });

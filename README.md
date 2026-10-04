@@ -1,8 +1,8 @@
 # 乳腺癌剂量计算工具
 
-Breast Cancer Chemotherapy Dose Calculator · **0.2.2 内置方案测试版** · 源码公开 · 非商业学术授权
+Breast Cancer Chemotherapy Dose Calculator · **1.0.1 三端内置方案测试版** · 源码公开 · 非商业学术授权
 
-面向医生和药师的离线方案查阅与剂量算术核对工具。Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、界面和计算核心。
+面向医生和药师的离线方案查阅与剂量算术核对工具。Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、界面和计算核心。1.0.1 的 Windows 版为全新原生外壳，包含与 Mac 相同的内置方案、整套剂量核对、自定义单药页面、复制功能和两行非商业声明。
 
 本版修正了 0.1.0 仅支持人工录入的偏差：根据作者原 Windows v3.0.2 程序恢复目录，并对照作者提供的《2026 CSCO乳腺癌诊疗指南》扫描页重新录入。包含 **52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡**；不是指南全书数据库，也不是旧 Windows 程序的完整移植。**未经独立临床验证。**
 
@@ -23,13 +23,15 @@ Breast Cancer Chemotherapy Dose Calculator · **0.2.2 内置方案测试版** ·
 
 | 文件 | 适用设备 | 签名 |
 | --- | --- | --- |
-| ChemoDose-0.2.2-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 4 |
-| ChemoDose-0.2.2-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
-| ChemoDose-v3.0.2-windows-academic.exe | Windows，保留原 v3.0.2 方案库 | 原 EXE 的声明修订副本；仅静态核验，未在 Windows 运行测试 |
+| ChemoDose-1.0.1-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 5 |
+| ChemoDose-1.0.1-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
+| ChemoDose-1.0.1-windows-x64.exe | Windows 11 x64 / Windows 10 22H2 x64，需 Microsoft WebView2 Runtime | 自包含 .NET 原生外壳；未 Authenticode 签名 |
 
-安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **0.2.2 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
+安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **1.0.1 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
 
-安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v0.2.2-preview)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
+安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.1)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
+
+Windows：双击 EXE 打开，无需另装 .NET。若提示缺少 WebView2，请从[微软官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)安装 Evergreen Runtime 后重试。本版未移植旧程序的报告识别与病理自动匹配。
 
 ## 数据与验证
 
@@ -47,7 +49,7 @@ Breast Cancer Chemotherapy Dose Calculator · **0.2.2 内置方案测试版** ·
 | packages/calculation-core | TypeScript 算术核心、方案适配层、回归测试 |
 | data | 有来源页码的共享方案目录 |
 | apps/shared-web | 方案库首页及次级人工核对页 |
-| apps/android、apps/macos | 离线原生外壳 |
+| apps/android、apps/macos、apps/windows | 三端离线原生外壳 |
 | scripts | 静态数据恢复、指南录入覆盖、网页及原生包构建 |
 | legacy | 算术参考与不完整的历史反编译研究文本 |
 
@@ -65,7 +67,7 @@ npm run typecheck
 
 原生构建见 [构建说明](docs/building.md)。生成的浏览器脚本不要单独修改，以免两端公式或数据不一致。
 
-本版源码按 [非商业学术授权](LICENSE) 提供，仅限学术交流，禁止商业用途。这是源码公开项目，不是允许商用的开放源代码许可，不声称提供旧 EXE 的完整对应源码。建立仓库和发布步骤见 [GitHub 项目说明](docs/github-publishing.md)。反馈请使用虚构数据，注明版本、步骤、单位、预期和实际结果。
+本版源码按 [非商业学术授权](LICENSE) 提供，仅限学术交流，禁止商业用途。这是源码公开项目，不是允许商用的开放源代码许可，不声称提供旧 EXE 的完整对应源码。发布步骤见 [GitHub 项目说明](docs/github-publishing.md)。反馈请使用虚构数据，注明版本、步骤、单位、预期和实际结果。
 
 ## 作者与授权声明
 
@@ -73,3 +75,5 @@ npm run typecheck
 版权所有 GitHub @jiayi-sketch
 
 0.2.2 在两个首页、使用说明及 Mac 原生“关于”窗口加入上述两行声明，并替换新版本的 GPL 标记。历史 GPL 版本保留原有授权。Windows v3.0.2 声明修订副本通过单独的静态补丁脚本生成，只有作者署名/使用声明变化，未移植 0.2.2 的方案库或修订原有计算。
+
+1.0.1 使用新 Windows 源码加载共享界面，取代旧声明修订副本；三个平台及算术核心版本统一为 1.0.1，指南目录版本保留 2026.10.02，临床复核状态仍为 pending。Windows 运行验证记录见 tests/README.md。

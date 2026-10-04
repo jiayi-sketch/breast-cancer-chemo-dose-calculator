@@ -137,3 +137,23 @@ test('new patient clears all fields and results; help opens and closes', t => {
   el('about-toggle').click(); assert.equal(el('about-dialog').open, true);
   el('about-close').click(); assert.equal(el('about-dialog').open, false);
 });
+
+test('manual Windows copy waits for acknowledgement and reports clipboard failure', t => {
+  const {window, el, submit, input} = setup(t);
+  const sent = [], listeners = new Set();
+  window.chrome = {webview: {
+    postMessage: value => sent.push(value),
+    addEventListener: (_, handler) => listeners.add(handler),
+    removeEventListener: (_, handler) => listeners.delete(handler)
+  }};
+  el('example').click(); submit(); el('copy').click();
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].value, /15\.00 mg/);
+  assert.match(el('toast').textContent, /正在复制/);
+  for (const fn of [...listeners]) fn({data:{type:'copySummaryResult',requestId:sent[0].requestId,ok:true}});
+  assert.match(el('toast').textContent, /已复制/);
+  el('copy').click();
+  for (const fn of [...listeners]) fn({data:{type:'copySummaryResult',requestId:sent[1].requestId,ok:false}});
+  assert.match(el('toast').textContent, /复制失败/);
+  input('weight', '90'); el('copy').click(); assert.equal(sent.length, 2);
+});

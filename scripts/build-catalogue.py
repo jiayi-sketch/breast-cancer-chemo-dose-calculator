@@ -143,7 +143,7 @@ for r in regimens + cards:
     for d in r.get('drugs', []):
         d['sourceBookPages'] = [p - 17 for p in d['sourcePdfPages']]
 
-catalogue = dict(schemaVersion=1, version='2026.10.02', appVersion='0.2.2',
+catalogue = dict(schemaVersion=1, version='2026.10.02', appVersion='1.0.1',
     title='2026 CSCO乳腺癌诊疗指南 · 内置方案',
     source=dict(title='2026 CSCO乳腺癌诊疗指南', edition='2026', pages=258,
         sha256='ac4446983fa63e8b9ca40f798abdd6202cd7e37e07ae63c49313d3a23421a02a',
