@@ -1,0 +1,77 @@
+/* SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial */
+:root{color-scheme:light;--ink:#17324a;--muted:#526c7e;--navy:#073b61;--blue:#0d649c;--line:#d5e3ed;--pale:#f3f9fd;--paper:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.6;color:var(--ink);background:#edf4f8}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}button{cursor:pointer;border:1px solid #c5d8e6;background:white;color:var(--navy);border-radius:7px;padding:9px 15px;min-height:44px}button:hover{background:#eaf4fb}button:disabled{opacity:.46;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #439fd9;outline-offset:3px}input:not([type=checkbox]),select{display:block;width:100%;min-width:0;border:1px solid #c4d5e2;border-radius:6px;background:white;padding:10px 11px;color:var(--ink);margin-top:5px;min-height:44px}input[type=checkbox]{width:19px;height:19px;accent-color:var(--blue);flex-shrink:0;margin:3px 0 0}label{display:block;font-size:13px;font-weight:600}label>span{color:var(--muted);font-weight:400;margin-left:5px}h1,h2,h3,p{margin:0}h1{font-size:21px;letter-spacing:.04em;font-weight:650}h2{font-size:26px;letter-spacing:.01em}h3{font-size:17px}a{color:var(--blue);text-underline-offset:4px}[hidden]{display:none!important}
+.topbar{background:var(--navy);color:white;display:flex;align-items:center;justify-content:space-between;padding:20px 30px;gap:15px}.brand{display:flex;gap:13px;align-items:center}.brand-mark{width:40px;height:40px;border:1px solid #6e94ae;display:grid;place-items:center;border-radius:9px;font-size:28px}.brand p{font-size:12px;color:#d1e2ec;letter-spacing:.07em}.quiet{border:0;background:transparent;padding:6px 9px;font-size:13px}.topbar .quiet{color:white}.topbar .quiet:hover{background:#0a4f7e}.topbar .quiet span{margin-left:8px;border:1px solid #6e94ae;border-radius:4px;padding:2px 6px;font-size:11px}
+.workspace{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:calc(100vh - 95px)}.sidebar{background:#e5eff6;border-right:1px solid var(--line);padding:28px 16px}.eyebrow{color:var(--muted);font-size:11px;font-weight:650;letter-spacing:.13em;margin-bottom:8px}.sidebar nav{display:grid;gap:8px}.sidebar nav button{text-align:left;background:transparent;border:0;font-size:14px;padding:12px 10px}.sidebar nav button.is-current{background:var(--navy);color:white}.sidebar-note{font-size:12px;margin:32px 6px 0;color:var(--muted);border-top:1px solid #c7dae7;padding-top:20px}.sidebar-note strong{color:var(--ink)}.sidebar-note p{margin:7px 0 15px}main{padding:28px;max-width:1500px;width:100%;margin:auto}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.pill{border:1px solid #bfd5e4;padding:4px 9px;border-radius:20px;white-space:nowrap;font-size:11px;color:var(--muted)}.patient-panel,.catalogue-panel,.detail-panel{border:1px solid var(--line);background:var(--paper);border-radius:10px}.patient-panel{padding:17px 20px;margin-bottom:20px}.panel-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.patient-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}.bsa{border-left:1px solid var(--line);padding-left:20px;display:flex;flex-direction:column;justify-content:center}.bsa>span{font-size:12px;color:var(--muted)}.bsa strong{font-size:26px;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--blue)}.bsa small{font-size:10px;color:var(--muted)}fieldset{border:0;border-top:1px solid var(--line);margin:18px 0 0;padding:10px 0 0}legend{font-size:12px;font-weight:600;padding:0 8px 0 0}.renal-grid{display:grid;grid-template-columns:1fr 2fr;gap:14px}.check{display:flex;gap:9px;align-items:flex-start;font-weight:400;margin-top:14px;line-height:1.65}.hint{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.7}
+.catalogue-layout{display:grid;grid-template-columns:minmax(210px,29%) minmax(0,1fr);gap:20px;align-items:start}.catalogue-panel{padding:18px 14px}.catalogue-panel>label{margin-top:12px}.catalogue-panel>h3{margin:0 4px}
+.entry-list{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-auto-rows:max-content;
+  align-content:start;
+  gap:8px;
+  max-height:690px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  margin-top:11px;
+  padding:4px;
+}
+.entry-button{
+  -webkit-appearance:none;
+  appearance:none;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-content:start;
+  gap:5px;
+  width:100%;
+  min-width:0;
+  min-height:72px;
+  height:auto;
+  margin:0;
+  padding:12px 13px;
+  border:1px solid transparent;
+  border-radius:6px;
+  background:#fff;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.entry-button strong{
+  display:block;
+  margin:0;
+  font-size:14px;
+  line-height:1.55;
+  font-weight:600;
+}
+.entry-button small{
+  display:block;
+  margin:0;
+  font-size:12px;
+  line-height:1.5;
+  color:var(--muted);
+}
+.entry-button.is-selected{
+  background:#eaf4fc;
+  border-color:#85badb;
+  box-shadow:inset 3px 0 0 var(--blue);
+}
+.empty-list{padding:18px 6px;font-size:13px}.detail-panel{padding:24px;min-width:0}.detail-panel h3{font-size:23px;line-height:1.5}.metadata{color:var(--blue);font-size:12px;margin:8px 0}.source{font-size:12px;color:var(--muted);padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}.detail-panel>#entry-eligibility{font-size:13px}.reference-body{white-space:pre-line;font-size:14px;line-height:1.95;margin-top:20px}.review-box{margin:20px 0;padding:16px;background:var(--pale);border-radius:7px}.review-box>label:first-child input{max-width:330px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.primary{background:var(--blue);border-color:var(--blue);color:white;font-weight:600}.primary:hover{background:var(--navy)}#message{font-size:12px;color:var(--muted);margin-top:11px}#message.error{color:#a2361b}#message.success{color:#13603f}#alternatives>label{margin-top:15px}.phase{margin-top:22px}.phase-heading{font-size:12px;font-weight:700;letter-spacing:.04em;padding-bottom:7px;color:var(--navy);border-bottom:2px solid #9ebfd4}.drug-row{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:7px;border-bottom:1px solid var(--line);padding:14px 0}.drug-title{font-size:14px;font-weight:650}.drug-standard{font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px}.drug-value{font-size:16px;font-weight:650;color:var(--blue);text-align:right;font-variant-numeric:tabular-nums;line-height:1.6}.drug-value.pending{font-size:12px;font-weight:400;color:var(--muted)}.drug-schedule{grid-column:1/-1;font-size:12px;color:var(--ink)}.drug-note{grid-column:1/-1;font-size:11px;color:var(--muted)}.drug-source{grid-column:1/-1;font-size:10px;color:var(--muted)}details{margin-top:18px;font-size:12px}summary{cursor:pointer;color:var(--blue)}pre{overflow:auto;max-height:400px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--pale);padding:12px;font-size:11px}footer{font-size:11px;line-height:1.8;color:var(--muted);padding:20px 2px 5px}dialog{max-width:540px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:12px;padding:28px;color:var(--ink)}dialog::backdrop{background:#0b233a80}dialog h2{font-size:23px}dialog p{font-size:13px;margin:15px 0;line-height:1.8}
+/* Native macOS menulists can ignore the shared input minimum height. */
+select{
+  -webkit-appearance:none;
+  appearance:none;
+  height:44px;
+  padding:9px 36px 9px 11px;
+  line-height:24px;
+  background-image:linear-gradient(45deg,transparent 50%,#526c7e 50%),linear-gradient(135deg,#526c7e 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+  background-size:5px 5px;
+  background-repeat:no-repeat;
+}
+@media(min-width:1400px){.catalogue-layout{grid-template-columns:300px minmax(0,1fr)}}
+@media(max-width:1050px){.workspace{grid-template-columns:158px minmax(0,1fr)}.sidebar{padding:25px 10px}.sidebar nav button{font-size:12px}main{padding:22px 18px}.catalogue-layout{grid-template-columns:minmax(185px,29%) minmax(0,1fr);gap:14px}.detail-panel{padding:18px}.pill{display:none}}
+@media(max-width:760px){.topbar{padding:17px 16px}.brand{gap:10px}.brand-mark{width:32px;height:36px}h1{font-size:17px}.brand p{font-size:10px}.topbar .quiet{font-size:11px;padding:4px}.topbar .quiet span{display:none}.workspace{display:block}.sidebar{padding:10px 12px;border:0;border-bottom:1px solid var(--line)}.sidebar>.eyebrow,.sidebar-note{display:none}.sidebar nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.sidebar nav button{text-align:center;font-size:11px;padding:8px 3px;border-radius:5px}main{padding:20px 12px}.section-heading{margin-bottom:15px}h2{font-size:23px}.patient-panel{padding:13px 14px}.patient-grid{grid-template-columns:1fr 1fr .8fr;gap:9px}.bsa{padding-left:10px}.bsa strong{font-size:23px}.bsa>span{font-size:10px}input:not([type=checkbox]),select{font-size:16px;padding:9px}.renal-grid{grid-template-columns:1fr}.catalogue-layout{grid-template-columns:1fr}.catalogue-panel{padding:15px}.entry-list{max-height:230px}.catalogue-panel>h3{margin:0}.catalogue-panel>label{margin-top:10px}.detail-panel{padding:20px 16px}.detail-panel h3{font-size:22px}.drug-row{column-gap:10px;grid-template-columns:1fr 1fr}.drug-value{font-size:15px}.check{font-size:12px}.actions button{flex:1}.eyebrow{font-size:10px}footer{padding:18px 6px}}
+select{padding-right:36px}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+.usage-notice{padding:10px 16px;border-bottom:1px solid #d5e3ed;background:#fff;color:#17324a;font-size:13px;line-height:1.6;overflow-wrap:anywhere}.usage-notice span{display:block}

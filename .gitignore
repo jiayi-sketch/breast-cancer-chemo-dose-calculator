@@ -1,0 +1,41 @@
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build output; keep PyInstaller .spec files when they are recovered
+build/
+dist/
+*.egg-info/
+*.exe
+*.apk
+*.dmg
+*.app/
+*.jks
+*.keystore
+signing/
+node_modules/
+
+# Local configuration and generated runtime data
+.env
+.env.*
+!.env.example
+*.log
+local-data/
+patient-data/
+exports/
+password.txt
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local recovery intermediates
+recovery-work/

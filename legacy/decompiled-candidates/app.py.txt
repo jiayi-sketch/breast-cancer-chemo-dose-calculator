@@ -1,0 +1,431 @@
+# decompyle3 version 3.9.3
+# Python bytecode version base 3.8.0 (3413)
+# Decompiled from: Python 3.9.6 (default, May 22 2026, 11:13:45) 
+# [Clang 21.0.0 (clang-2100.1.1.101)]
+# Embedded file name: app.py
+import math, tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
+from catalogue import REGIMENS, REFERENCE_CARDS, SOURCE_TITLE
+from report_panel import ReportPanel
+APP_VERSION = "3.0.2 病理匹配预览版"
+CLINICAL_NAV_ITEMS = ["术前新辅助治疗", "术后辅助治疗", "后续内分泌治疗", "保乳术后治疗"]
+BLUE_900 = "#073B61"
+BLUE_800 = "#0A4F7E"
+BLUE_700 = "#0D649C"
+BLUE_500 = "#2496CF"
+BLUE_100 = "#DCEFFA"
+BLUE_050 = "#F3F9FD"
+TEXT = "#17324A"
+MUTED = "#60778A"
+
+def calc_bsa(height_cm, weight_kg):
+    if not 80 <= height_cm <= 250:
+        raise ValueError("身高须在80-250 cm范围内。")
+    if not 20 <= weight_kg <= 350:
+        raise ValueError("体重须在20-350 kg范围内。")
+    return math.sqrt(height_cm * weight_kg / 3600.0)
+
+
+def standard_text(item):
+    kind, dose = item["kind"], item["dose"]
+    if kind == "bsa":
+        return f"{dose:g} mg/m²"
+    if kind == "bsa_range":
+        (lo, hi) = dose
+        if lo == hi:
+            return f"{lo:g} mg/m²"
+        return f"{lo:g}-{hi:g} mg/m²"
+    if kind == "weight":
+        return f"{dose:g} mg/kg"
+    if kind == "weight_seq":
+        return f"首剂{dose[0]:g} mg/kg，后续{dose[1]:g} mg/kg"
+    if kind == "fixed":
+        return f"{dose:g} mg"
+    if kind == "fixed_seq":
+        return f"首剂{dose[0]:g} mg，后续{dose[1]:g} mg"
+    if kind == "fixed_alt":
+        return f"{dose[0]:g} mg或{dose[1]:g} mg"
+    if kind == "auc":
+        return f"AUC {dose:g}"
+    return str(dose)
+
+
+def calculate_item(item, bsa, weight_kg, gfr):
+    kind, dose = item["kind"], item["dose"]
+    if kind == "bsa":
+        return f"{dose * bsa:.2f} mg/次"
+    if kind == "bsa_range":
+        (lo, hi) = dose
+        if lo == hi:
+            return f"{lo * bsa:.2f} mg/次"
+        return f"{lo * bsa:.2f}-{hi * bsa:.2f} mg/次"
+    if kind == "weight":
+        return f"{dose * weight_kg:.2f} mg/次"
+    if kind == "weight_seq":
+        return f"首剂{dose[0] * weight_kg:.2f} mg；后续{dose[1] * weight_kg:.2f} mg/次"
+    if kind == "fixed":
+        return f"{dose:g} mg/次（固定剂量）"
+    if kind == "fixed_seq":
+        return f"首剂{dose[0]:g} mg；后续{dose[1]:g} mg/次"
+    if kind == "fixed_alt":
+        return "按所选给药频次使用固定剂量"
+    if kind == "auc":
+        if gfr is None:
+            return "需输入GFR/CrCl后计算"
+        if not 0 <= gfr <= 200:
+            raise ValueError("GFR/CrCl须在0-200 mL/min范围内。")
+        return f"{dose * (gfr + 25):.2f} mg/次"
+    return "—"
+
+
+class ClinicalApp(tk.Tk):
+
+    def __init__(self):
+        super().__init__()
+        self.title("乳腺癌化疗剂量计算工具 v" + APP_VERSION)
+        self.geometry("1360x870")
+        self.minsize(1120, 750)
+        self.configure(bg=BLUE_050)
+        self.current_section = CLINICAL_NAV_ITEMS[0]
+        self.current_items = []
+        self.selected_payload = None
+        self.content_frames = {}
+        self.route_summary = ""
+        self.route_item = None
+        self._style()
+        self._build()
+        self.select_section("报告智能匹配")
+
+    def _build(self):
+        header = tk.Frame(self, bg=BLUE_900, height=82)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        ttk.Label(header, text="乳腺癌化疗剂量计算工具", style="Title.TLabel").pack(anchor="w", padx=24, pady=(12,
+                                                                                                    0))
+        ttk.Label(header, text="病理报告  →  分型核对  →  术前 / 术后方案  →  剂量计算", style="Subtitle.TLabel").pack(anchor="w", padx=25, pady=(3,
+                                                                                                                                0))
+        tk.Button(header, text="新患者 / 清空本次", command=(self.new_patient), bg=BLUE_700, fg="white",
+          relief="flat",
+          font=('Microsoft YaHei UI', 10),
+          padx=14,
+          pady=6).place(relx=0.98, rely=0.5, anchor="e")
+        body = ttk.Frame(self)
+        body.pack(fill="both", expand=True)
+        nav = tk.Frame(body, bg=BLUE_800, width=195)
+        nav.pack(side="left", fill="y")
+        nav.pack_propagate(False)
+        tk.Label(nav, text="CLINICAL WORKSPACE", bg=BLUE_800, fg="#BFE4F7", font=('Segoe UI',
+                                                                                  9,
+                                                                                  'bold')).pack(pady=(24,
+                                                                                                      14))
+        self.nav_buttons = {}
+        for text in ["报告智能匹配"] + CLINICAL_NAV_ITEMS:
+            button = tk.Button(nav, text=text, bg=BLUE_800, fg="white", relief="flat", anchor="w",
+              padx=18,
+              pady=13,
+              font=('Microsoft YaHei UI', 11),
+              command=(lambda name=text: self.select_section(name)))
+            button.pack(fill="x")
+            self.nav_buttons[text] = button
+
+        tk.Label(nav, text="v3.0.2 · 病理匹配预览版\n离线处理 · 报告不保存", bg=BLUE_800,
+          fg="#BFE4F7",
+          justify="left",
+          font=('Microsoft YaHei UI', 9)).pack(anchor="w", padx=18, pady=20)
+        tk.Label(nav, text="软件仅限学术交流内部使用。\n软件签名：赵家一", bg=BLUE_800,
+          fg="#BFE4F7",
+          justify="left",
+          font=('Microsoft YaHei UI', 8)).pack(side="bottom", anchor="w", padx=12, pady=18)
+        self.workspace = ttk.Frame(body)
+        self.workspace.pack(side="left", fill="both", expand=True)
+        clinical = ttk.Frame((self.workspace), padding=12)
+        self.content_frames["clinical"] = clinical
+        self._build_patient_card(clinical)
+        pane = tk.PanedWindow(clinical, orient="horizontal", sashwidth=6, bg=BLUE_100)
+        pane.pack(fill="both", expand=True, pady=(10, 0))
+        left, right = tk.Frame(pane, bg="white"), tk.Frame(pane, bg="white")
+        pane.add(left, minsize=255, width=310)
+        pane.add(right, minsize=600)
+        self._build_catalog(left)
+        self._build_detail(right)
+        self.report_panel = ReportPanel(self.workspace, self.open_matched_regimen, self.invalidate_case)
+        self.content_frames["报告智能匹配"] = self.report_panel
+
+    def invalidate_case(self):
+        self.route_summary = ""
+        self.route_item = None
+        self.height_var.set("")
+        self.weight_var.set("")
+        self.gfr_var.set("")
+        self.ack_var.set(False)
+        self.bsa_var.set("BSA：--")
+        self.show_empty()
+
+    def new_patient(self):
+        if not messagebox.askyesno("清空本次", "清空本次报告、匹配结果及剂量参数？", parent=self):
+            return
+        self.report_panel.clear()
+        self.select_section("报告智能匹配")
+
+    def select_section(self, section):
+        self.current_section = section
+        for (name, button) in self.nav_buttons.items():
+            button.configure(bg=(BLUE_700 if name == section else BLUE_800))
+
+        for frame in self.content_frames.values():
+            frame.pack_forget()
+
+        if section == "报告智能匹配":
+            self.report_panel.pack(fill="both", expand=True)
+            return
+        self.route_summary = ""
+        self.ack_var.set(False)
+        self.route_item = None
+        self.content_frames["clinical"].pack(fill="both", expand=True)
+        subtypes = sorted({r["subtype"] for r in REGIMENS + REFERENCE_CARDS if r["section"] == section})
+        self.subtype_box["values"] = ["全部"] + subtypes
+        self.subtype_var.set("全部")
+        self.search_var.set("")
+        self.refresh_catalog()
+
+    def open_matched_regimen(self, match, summary):
+        regimen = match["regimen"]
+        self.select_section(regimen["section"])
+        self.subtype_var.set(regimen["subtype"])
+        self.refresh_catalog()
+        for (index, (kind, title, item)) in enumerate(self.current_items):
+            if kind == "方案":
+                if item is regimen:
+                    self.listbox.selection_clear(0, "end")
+                    self.listbox.selection_set(index)
+                    self.listbox.see(index)
+                    self.route_summary = summary + "；检索状态：" + match["level"]
+                    self.route_item = regimen
+                    self.on_select()
+                    break
+
+    def _style(self):
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure("TFrame", background=BLUE_050)
+        style.configure("Card.TFrame", background="white")
+        style.configure("TLabel", background=BLUE_050, foreground=TEXT, font=('Microsoft YaHei UI',
+                                                                              10))
+        style.configure("Card.TLabel", background="white", foreground=TEXT, font=('Microsoft YaHei UI',
+                                                                                  10))
+        style.configure("Title.TLabel", background=BLUE_900, foreground="white", font=('Microsoft YaHei UI',
+                                                                                       18,
+                                                                                       'bold'))
+        style.configure("Subtitle.TLabel", background=BLUE_900, foreground="#CDE9F9", font=('Microsoft YaHei UI',
+                                                                                            10))
+        style.configure("Section.TLabel", background="white", foreground=BLUE_800, font=('Microsoft YaHei UI',
+                                                                                         13,
+                                                                                         'bold'))
+        style.configure("Muted.TLabel", background="white", foreground=MUTED, font=('Microsoft YaHei UI',
+                                                                                    9))
+        style.configure("Accent.TButton", font=('Microsoft YaHei UI', 10, 'bold'), foreground="white", background=BLUE_700, padding=(14,
+                                                                                                                                     8))
+        style.map("Accent.TButton", background=[("active", BLUE_500)])
+        style.configure("TButton", font=('Microsoft YaHei UI', 10), padding=(10, 7))
+        style.configure("TEntry", padding=6)
+        style.configure("TCombobox", padding=5)
+        style.configure("Treeview", font=('Microsoft YaHei UI', 9), rowheight=31, background="white", fieldbackground="white", foreground=TEXT)
+        style.configure("Treeview.Heading", font=('Microsoft YaHei UI', 9, 'bold'), background=BLUE_100, foreground=BLUE_900)
+        style.map("Treeview", background=[("selected", BLUE_700)], foreground=[('selected', 'white')])
+        style.configure("TCheckbutton", background="white", foreground=TEXT, font=('Microsoft YaHei UI',
+                                                                                   9))
+
+    def _build_patient_card(self, parent):
+        card = ttk.Frame(parent, style="Card.TFrame", padding=(16, 12))
+        card.pack(fill="x")
+        ttk.Label(card, text="患者计算参数", style="Section.TLabel").grid(row=0, column=0, columnspan=8, sticky="w")
+        ttk.Label(card, text="仅用于本次计算；软件不会保存这些数据", style="Muted.TLabel").grid(row=1, column=0, columnspan=8, sticky="w", pady=(0,
+                                                                                                                               8))
+        self.height_var = tk.StringVar()
+        self.weight_var = tk.StringVar()
+        self.gfr_var = tk.StringVar()
+        entries = [
+         (
+          "身高（cm）", self.height_var),
+         (
+          "体重（kg）", self.weight_var),
+         (
+          "GFR（mL/min）", self.gfr_var)]
+        for (i, (label, var)) in enumerate(entries):
+            ttk.Label(card, text=label, style="Card.TLabel").grid(row=2, column=(i * 2), sticky="w", padx=(0,
+                                                                                                           6))
+            ttk.Entry(card, textvariable=var, width=13).grid(row=2, column=(i * 2 + 1), sticky="w", padx=(0,
+                                                                                                          18))
+
+        ttk.Button(card, text="更新计算", style="Accent.TButton", command=(self.recalculate)).grid(row=2, column=6, padx=(4,
+                                                                                                                      12))
+        self.bsa_var = tk.StringVar(value="BSA：--")
+        ttk.Label(card, textvariable=(self.bsa_var), style="Section.TLabel").grid(row=2, column=7, sticky="e")
+        card.columnconfigure(7, weight=1)
+
+    def _build_catalog(self, parent):
+        tk.Label(parent, text="方案与推荐摘要", bg="white", fg=BLUE_800, font=('Microsoft YaHei UI',
+                                                                        13, 'bold')).pack(anchor="w", padx=14, pady=(14,
+                                                                                                                     6))
+        self.search_var = tk.StringVar()
+        search = ttk.Entry(parent, textvariable=(self.search_var))
+        search.pack(fill="x", padx=14, pady=(0, 8))
+        search.insert(0, "")
+        self.search_var.trace_add("write", lambda *_: self.refresh_catalog())
+        self.subtype_var = tk.StringVar(value="全部")
+        self.subtype_box = ttk.Combobox(parent, textvariable=(self.subtype_var), state="readonly")
+        self.subtype_box.pack(fill="x", padx=14, pady=(0, 10))
+        self.subtype_box.bind("<<ComboboxSelected>>", lambda _e: self.refresh_catalog())
+        list_frame = tk.Frame(parent, bg="white")
+        list_frame.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self.listbox = tk.Listbox(list_frame,
+          relief="flat", borderwidth=0, highlightthickness=0, bg="white",
+          fg=TEXT,
+          selectbackground=BLUE_700,
+          selectforeground="white",
+          font=('Microsoft YaHei UI', 10),
+          activestyle="none")
+        list_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=(self.listbox.yview))
+        self.listbox.configure(yscrollcommand=(list_scroll.set))
+        self.listbox.pack(side="left", fill="both", expand=True)
+        list_scroll.pack(side="right", fill="y")
+        self.listbox.bind("<<ListboxSelect>>", self.on_select)
+
+    def _build_detail(self, parent):
+        top = tk.Frame(parent, bg="white")
+        top.pack(fill="x", padx=16, pady=(14, 6))
+        self.detail_title = tk.Label(top, text="请选择方案", bg="white", fg=BLUE_800, font=('Microsoft YaHei UI',
+                                                                                       15,
+                                                                                       'bold'), anchor="w")
+        self.detail_title.pack(fill="x")
+        self.detail_meta = tk.Label(top, text="", bg="white", fg=MUTED, font=('Microsoft YaHei UI',
+                                                                              9), anchor="w")
+        self.detail_meta.pack(fill="x", pady=(3, 0))
+        self.detail_text = tk.Text(parent,
+          height=6, wrap="word", relief="flat", bg=BLUE_050, fg=TEXT, font=('Microsoft YaHei UI',
+                                                                            10),
+          padx=12,
+          pady=10)
+        self.detail_text.pack(fill="x", padx=16, pady=(4, 10))
+        self.detail_text.configure(state="disabled")
+        table_frame = tk.Frame(parent, bg="white")
+        table_frame.pack(fill="both", expand=True, padx=16)
+        cols = ('drug', 'standard', 'calculated', 'schedule', 'duration')
+        self.table = ttk.Treeview(table_frame, columns=cols, show="headings")
+        headings = { 'drug': "药物", 'standard': "指南剂量", 'calculated': "按参数计算", 'schedule': "给药时间", 'duration': "疗程"}
+        widths = { 'drug': 130, 'standard': 130, 'calculated': 175, 'schedule': 155, 'duration': 110}
+        for col in cols:
+            self.table.heading(col, text=(headings[col]))
+            self.table.column(col, width=(widths[col]), minwidth=90, anchor="w")
+
+        ybar = ttk.Scrollbar(table_frame, orient="vertical", command=(self.table.yview))
+        self.table.configure(yscrollcommand=(ybar.set))
+        self.table.pack(side="left", fill="both", expand=True)
+        ybar.pack(side="right", fill="y")
+        footer = tk.Frame(parent, bg="white")
+        footer.pack(fill="x", padx=16, pady=12)
+        self.ack_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(footer,
+          variable=(self.ack_var), text="我将结合诊断、分期/分型、器官功能、说明书、院内路径及第二人复核后使用。").pack(side="left")
+        ttk.Button(footer, text="复制核对单", style="Accent.TButton", command=(self.copy_summary)).pack(side="right")
+
+    def refresh_catalogParse error at or near `LOAD_FAST' instruction at offset 0
+
+    def on_select(self, _event=None):
+        selection = self.listbox.curselection()
+        if not selection:
+            return
+        (kind, _title, payload) = self.current_items[selection[0]]
+        if payload is not self.route_item:
+            self.route_summary = ""
+        self.ack_var.set(False)
+        self.selected_payload = (kind, payload)
+        if kind == "方案":
+            self.show_regimen(payload)
+        else:
+            self.show_reference(payload)
+
+    def _set_text(self, content):
+        self.detail_text.configure(state="normal")
+        self.detail_text.delete("1.0", "end")
+        self.detail_text.insert("1.0", content)
+        self.detail_text.configure(state="disabled")
+
+    def _params(self):
+        height = float(self.height_var.get())
+        weight = float(self.weight_var.get())
+        bsa = calc_bsa(height, weight)
+        gfr = float(self.gfr_var.get()) if self.gfr_var.get().strip() else None
+        if gfr is not None:
+            if not 0 <= gfr <= 200:
+                raise ValueError("GFR/CrCl须在0-200 mL/min范围内。")
+            self.bsa_var.set(f"BSA：{bsa:.3f} m²")
+            return (
+             height, weight, bsa, gfr)
+
+    def show_regimen(self, item):
+        self.detail_title.configure(text=(item["name"]))
+        self.detail_meta.configure(text=f'{item["subtype"]}  ·  {item["level"]}  ·  PDF页码 {item["pages"]}')
+        text = f'适用/定位：{item["eligibility"]}'
+        if item.get("notes"):
+            text += f'\n特别提示：{item["notes"]}'
+        text += "\n计算为理论值；不取整或自动减量。肾功能须用已核实的非标化值（mL/min），不可直接输入 mL/min/1.73m²。"
+        if self.route_summary:
+            text = self.route_summary + "\n" + text
+        self._set_text(text)
+        self._fill_table(item)
+
+    def _fill_table(self, item):
+        for row in self.table.get_children():
+            self.table.delete(row)
+
+        try:
+            (_h, weight, bsa, gfr) = self._params()
+            problem = None
+        except (ValueError, TypeError) as exc:
+            try:
+                problem = str(exc)
+                self.bsa_var.set("BSA：请填写有效参数")
+            finally:
+                exc = None
+                del exc
+
+        else:
+            for drug in item["drugs"]:
+                amount = "待输入有效身高/体重" if problem else calculate_item(drug, bsa, weight, gfr)
+                self.table.insert("", "end", values=(
+                 drug["name"], standard_text(drug), amount, drug["schedule"], drug["duration"]))
+
+    def show_reference(self, item):
+        self.detail_title.configure(text=(item["title"]))
+        self.detail_meta.configure(text=f'{item["subtype"]}  ·  PDF页码 {item["pages"]}')
+        self._set_text(item["body"] + "\n\n该条用于推荐分层核对，不自动替代临床判断。")
+        for row in self.table.get_children():
+            self.table.delete(row)
+
+    def show_empty(self):
+        self.selected_payload = None
+        self.detail_title.configure(text="没有匹配内容")
+        self.detail_meta.configure(text="")
+        self._set_text("请调整搜索词或亚型筛选。")
+        for row in self.table.get_children():
+            self.table.delete(row)
+
+    def recalculate(self):
+        if self.selected_payload and self.selected_payload[0] == "方案":
+            self.show_regimen(self.selected_payload[1])
+        else:
+            try:
+                self._params()
+            except Exception as exc:
+                try:
+                    messagebox.showerror("参数错误", str(exc))
+                finally:
+                    exc = None
+                    del exc
+
+    def copy_summaryParse error at or near `LOAD_FAST' instruction at offset 0
+
+
+if __name__ == "__main__":
+    ClinicalApp().mainloop()

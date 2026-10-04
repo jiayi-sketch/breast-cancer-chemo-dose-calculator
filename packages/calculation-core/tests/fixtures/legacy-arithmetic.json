@@ -1,0 +1,561 @@
+{
+  "provenance": "Inspected arithmetic recovered from user-supplied executable; no clinical validation.",
+  "synthetic": true,
+  "cases": [
+    {
+      "kind": "bsa",
+      "dose": 7.5,
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "15.00 mg/次",
+      "expectedRoundedMg": [
+        15.0
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        1.5,
+        2.5
+      ],
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "3.00-5.00 mg/次",
+      "expectedRoundedMg": [
+        3.0,
+        5.0
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        2,
+        2
+      ],
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "4.00 mg/次",
+      "expectedRoundedMg": [
+        4.0
+      ]
+    },
+    {
+      "kind": "weight",
+      "dose": 1.25,
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "100.00 mg/次",
+      "expectedRoundedMg": [
+        100.0
+      ]
+    },
+    {
+      "kind": "weight_seq",
+      "dose": [
+        2,
+        1
+      ],
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "首剂160.00 mg；后续80.00 mg/次",
+      "expectedRoundedMg": [
+        160.0,
+        80.0
+      ]
+    },
+    {
+      "kind": "fixed",
+      "dose": 12.5,
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "12.5 mg/次（固定剂量）",
+      "expectedRoundedMg": [
+        12.5
+      ]
+    },
+    {
+      "kind": "fixed_seq",
+      "dose": [
+        20,
+        10
+      ],
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "首剂20 mg；后续10 mg/次",
+      "expectedRoundedMg": [
+        20.0,
+        10.0
+      ]
+    },
+    {
+      "kind": "auc",
+      "dose": 2,
+      "heightCm": 180,
+      "weightKg": 80,
+      "renalMlMin": 90,
+      "expectedBsaM2": 2.0,
+      "legacyDisplay": "230.00 mg/次",
+      "expectedRoundedMg": [
+        230.0
+      ]
+    },
+    {
+      "kind": "bsa",
+      "dose": 7.5,
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "13.14 mg/次",
+      "expectedRoundedMg": [
+        13.14
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        1.5,
+        2.5
+      ],
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "2.63-4.38 mg/次",
+      "expectedRoundedMg": [
+        2.63,
+        4.38
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        2,
+        2
+      ],
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "3.50 mg/次",
+      "expectedRoundedMg": [
+        3.5
+      ]
+    },
+    {
+      "kind": "weight",
+      "dose": 1.25,
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "81.25 mg/次",
+      "expectedRoundedMg": [
+        81.25
+      ]
+    },
+    {
+      "kind": "weight_seq",
+      "dose": [
+        2,
+        1
+      ],
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "首剂130.00 mg；后续65.00 mg/次",
+      "expectedRoundedMg": [
+        130.0,
+        65.0
+      ]
+    },
+    {
+      "kind": "fixed",
+      "dose": 12.5,
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "12.5 mg/次（固定剂量）",
+      "expectedRoundedMg": [
+        12.5
+      ]
+    },
+    {
+      "kind": "fixed_seq",
+      "dose": [
+        20,
+        10
+      ],
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "首剂20 mg；后续10 mg/次",
+      "expectedRoundedMg": [
+        20.0,
+        10.0
+      ]
+    },
+    {
+      "kind": "auc",
+      "dose": 2,
+      "heightCm": 170,
+      "weightKg": 65,
+      "renalMlMin": 75,
+      "expectedBsaM2": 1.7519830034690533,
+      "legacyDisplay": "200.00 mg/次",
+      "expectedRoundedMg": [
+        200.0
+      ]
+    },
+    {
+      "kind": "bsa",
+      "dose": 7.5,
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "5.00 mg/次",
+      "expectedRoundedMg": [
+        5.0
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        1.5,
+        2.5
+      ],
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "1.00-1.67 mg/次",
+      "expectedRoundedMg": [
+        1.0,
+        1.67
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        2,
+        2
+      ],
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "1.33 mg/次",
+      "expectedRoundedMg": [
+        1.33
+      ]
+    },
+    {
+      "kind": "weight",
+      "dose": 1.25,
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "25.00 mg/次",
+      "expectedRoundedMg": [
+        25.0
+      ]
+    },
+    {
+      "kind": "weight_seq",
+      "dose": [
+        2,
+        1
+      ],
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "首剂40.00 mg；后续20.00 mg/次",
+      "expectedRoundedMg": [
+        40.0,
+        20.0
+      ]
+    },
+    {
+      "kind": "fixed",
+      "dose": 12.5,
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "12.5 mg/次（固定剂量）",
+      "expectedRoundedMg": [
+        12.5
+      ]
+    },
+    {
+      "kind": "fixed_seq",
+      "dose": [
+        20,
+        10
+      ],
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "首剂20 mg；后续10 mg/次",
+      "expectedRoundedMg": [
+        20.0,
+        10.0
+      ]
+    },
+    {
+      "kind": "auc",
+      "dose": 2,
+      "heightCm": 80,
+      "weightKg": 20,
+      "renalMlMin": 0,
+      "expectedBsaM2": 0.6666666666666666,
+      "legacyDisplay": "50.00 mg/次",
+      "expectedRoundedMg": [
+        50.0
+      ]
+    },
+    {
+      "kind": "bsa",
+      "dose": 7.5,
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "36.98 mg/次",
+      "expectedRoundedMg": [
+        36.98
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        1.5,
+        2.5
+      ],
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "7.40-12.33 mg/次",
+      "expectedRoundedMg": [
+        7.4,
+        12.33
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        2,
+        2
+      ],
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "9.86 mg/次",
+      "expectedRoundedMg": [
+        9.86
+      ]
+    },
+    {
+      "kind": "weight",
+      "dose": 1.25,
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "437.50 mg/次",
+      "expectedRoundedMg": [
+        437.5
+      ]
+    },
+    {
+      "kind": "weight_seq",
+      "dose": [
+        2,
+        1
+      ],
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "首剂700.00 mg；后续350.00 mg/次",
+      "expectedRoundedMg": [
+        700.0,
+        350.0
+      ]
+    },
+    {
+      "kind": "fixed",
+      "dose": 12.5,
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "12.5 mg/次（固定剂量）",
+      "expectedRoundedMg": [
+        12.5
+      ]
+    },
+    {
+      "kind": "fixed_seq",
+      "dose": [
+        20,
+        10
+      ],
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "首剂20 mg；后续10 mg/次",
+      "expectedRoundedMg": [
+        20.0,
+        10.0
+      ]
+    },
+    {
+      "kind": "auc",
+      "dose": 2,
+      "heightCm": 250,
+      "weightKg": 350,
+      "renalMlMin": 200,
+      "expectedBsaM2": 4.930066485916347,
+      "legacyDisplay": "450.00 mg/次",
+      "expectedRoundedMg": [
+        450.0
+      ]
+    },
+    {
+      "kind": "bsa",
+      "dose": 7.5,
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "12.45 mg/次",
+      "expectedRoundedMg": [
+        12.45
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        1.5,
+        2.5
+      ],
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "2.49-4.15 mg/次",
+      "expectedRoundedMg": [
+        2.49,
+        4.15
+      ]
+    },
+    {
+      "kind": "bsa_range",
+      "dose": [
+        2,
+        2
+      ],
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "3.32 mg/次",
+      "expectedRoundedMg": [
+        3.32
+      ]
+    },
+    {
+      "kind": "weight",
+      "dose": 1.25,
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "75.62 mg/次",
+      "expectedRoundedMg": [
+        75.62
+      ]
+    },
+    {
+      "kind": "weight_seq",
+      "dose": [
+        2,
+        1
+      ],
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "首剂121.00 mg；后续60.50 mg/次",
+      "expectedRoundedMg": [
+        121.0,
+        60.5
+      ]
+    },
+    {
+      "kind": "fixed",
+      "dose": 12.5,
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "12.5 mg/次（固定剂量）",
+      "expectedRoundedMg": [
+        12.5
+      ]
+    },
+    {
+      "kind": "fixed_seq",
+      "dose": [
+        20,
+        10
+      ],
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "首剂20 mg；后续10 mg/次",
+      "expectedRoundedMg": [
+        20.0,
+        10.0
+      ]
+    },
+    {
+      "kind": "auc",
+      "dose": 2,
+      "heightCm": 164,
+      "weightKg": 60.5,
+      "renalMlMin": 72.5,
+      "expectedBsaM2": 1.6601539419918598,
+      "legacyDisplay": "195.00 mg/次",
+      "expectedRoundedMg": [
+        195.0
+      ]
+    }
+  ]
+}

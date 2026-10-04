@@ -1,0 +1,59 @@
+# decompyle3 version 3.9.3
+# Python bytecode version base 3.8.0 (3413)
+# Decompiled from: Python 3.9.6 (default, May 22 2026, 11:13:45) 
+# [Clang 21.0.0 (clang-2100.1.1.101)]
+# Embedded file name: catalogue.py
+"""Version 3 additions checked against PDF pages 55, 68, 74, 75, 82-84."""
+from copy import deepcopy
+from clinical_data import REGIMENS as BASE, REFERENCE_CARDS as BASE_CARDS, SOURCE_TITLE, med
+REGIMENS = deepcopy(BASE)
+REFERENCE_CARDS = deepcopy(BASE_CARDS)
+
+def append(name, drugs, pages, subtype='HER2阳性', notes=''):
+    REGIMENS.append(dict(section="术后辅助治疗", subtype=subtype, name=name, level="按术后风险分层，见对应推荐表",
+      pages=pages,
+      eligibility="已确认术后全身治疗指征；具体分层由医生复核。",
+      drugs=drugs,
+      notes=notes))
+
+
+append("TCbH", [med("多西他赛", "bsa", 75, "d1，每21天", "共6周期"),
+ med("卡铂", "auc", 6, "d1，每21天", "共6周期"),
+ med("曲妥珠单抗", "weight_seq", (8, 6), "d1，每21天", "完成1年")], "68、74")
+append("TC + H", [med("多西他赛", "bsa", 75, "d1，每21天", "共4周期"),
+ med("环磷酰胺", "bsa", 600, "d1，每21天", "共4周期"),
+ med("曲妥珠单抗", "weight_seq", (8, 6), "d1，每21天", "完成1年")], "68、70、74")
+append("TH（紫杉醇周疗）", [med("紫杉醇", "bsa", 80, "d1，每7天", "共12次"),
+ med("曲妥珠单抗", "weight_seq", (4, 2), "d1，每7天", "完成1年")], "68、70、74")
+tc = next((r for r in REGIMENS if r["name"] == "TC"))
+REGIMENS.remove(tc)
+for count in (4, 6):
+    item = deepcopy(tc)
+    item["name"] = "TC（%s周期）" % count
+    item["pages"] = "75、78、81"
+    item["notes"] = "4周期与6周期分别对应不同推荐层级，不能相互混用。"
+    for drug in item["drugs"]:
+        drug["duration"] = "共%s周期" % count
+
+    REGIMENS.append(item)
+
+hr_names = {
+ "AC → T（多西他赛）","AC → T（紫杉醇周疗）","密集AC → 密集T","AC","TC（4周期）","TC（6周期）"}
+for r in list(REGIMENS):
+    if r["section"] == "术后辅助治疗":
+        if r["subtype"] == "三阴性":
+            if r["name"] in hr_names:
+                item = deepcopy(r)
+                item["subtype"] = "激素受体阳性"
+                item["pages"] = "83、84；剂量：" + r["pages"]
+                item["level"] = "按 PDF83 风险分层"
+                item["eligibility"] = "HR阳性/HER2阴性，且医生已确认辅助化疗获益与指征。"
+                REGIMENS.append(item)
+            append("TAC", [med("多西他赛", "bsa", 75, "d1，每21天", "共6周期"),
+             med("多柔比星", "bsa", 50, "d1，每21天", "共6周期"),
+             med("环磷酰胺", "bsa", 500, "d1，每21天", "共6周期")], "82、83", "激素受体阳性")
+            REFERENCE_CARDS.append(dict(section="术后辅助治疗",
+              subtype="激素受体阳性",
+              title="HR阳性/HER2阴性：化疗分层",
+              pages="83、84",
+              body="高复发风险：≥4个阳性淋巴结，或1–3个阳性且有其他高危因素。\n其他化疗分层：1–3个阳性但无其他危险因素，或淋巴结阴性且有高Ki-67、肿瘤>2cm、年龄<35岁等因素之一。\n化疗获益须结合绝经状态、分期、病理及必要时多基因检测；不凭Ki-67单项自动判定。"))

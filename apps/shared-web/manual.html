@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>乳腺癌剂量计算 · 核对工作台</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="core.browser.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-symbol" aria-hidden="true">√</span><div><strong>乳腺癌剂量计算</strong><span>医生 / 药师 · 核对工作台</span></div></div>
+    <div class="header-actions"><a href="index.html">返回内置方案库</a><span class="version">测试版 0.2.2</span><button id="about-toggle" class="quiet-button" type="button">使用说明</button></div>
+  </header>
+  <div class="usage-notice"><span>仅限于学术交流，严禁商业用途</span><span>版权所有 GitHub @jiayi-sketch</span></div>
+  <main>
+    <div class="intro"><div><p class="eyebrow">本次计算</p><h1>让每一步计算都有依据。</h1><p class="subheading">手动选择计算方式，核对参数，查看公式与完整结果。</p></div><button id="clear" class="outline-button" type="button">新患者 / 清空</button></div>
+    <div class="session-strip"><span><i class="status-dot"></i>本机离线计算</span><span>输入仅保留在本次窗口</span><button id="example" type="button">载入算术示例 ↗</button></div>
+    <div id="example-notice" class="example-notice" hidden>当前为虚构的算术示例，不对应任何药物或治疗方案。</div>
+    <div class="workspace">
+      <form id="dose-form" class="input-panel" novalidate autocomplete="off">
+        <section class="form-section">
+          <div class="section-title"><span class="step-number">1</span><div><h2>选择计算规则</h2><p>录入已核对的方案，不自动推荐治疗。</p></div></div>
+          <div class="field-grid">
+            <label class="field full-mobile">计算项目 / 药物名称<input id="item-name" maxlength="100" placeholder="输入本次计算项目" spellcheck="false"></label>
+            <label class="field full-mobile">计算方式<select id="kind"><option value="bsa">按体表面积</option><option value="bsa_range">按体表面积 · 剂量区间</option><option value="weight">按体重</option><option value="weight_seq">按体重 · 首剂与后续</option><option value="fixed">固定剂量</option><option value="fixed_seq">固定剂量 · 首剂与后续</option><option value="fixed_alt">固定剂量 · 按频次选择</option><option value="auc">AUC 计算</option></select></label>
+            <label class="field"><span id="dose1-label">剂量系数</span><span class="unit-input"><input id="dose1" type="number" inputmode="decimal" step="any" placeholder="待填写"><span id="dose1-unit">mg/m²</span></span></label>
+            <label id="dose2-field" class="field" hidden><span id="dose2-label">后续剂量</span><span class="unit-input"><input id="dose2" type="number" inputmode="decimal" step="any" placeholder="待填写"><span id="dose2-unit">mg</span></span></label>
+          </div>
+          <div id="alternative-fields" hidden><div class="field-grid extra-fields"><label class="field">选项一给药频次<input id="schedule1" maxlength="100" placeholder="填写与剂量一对应的频次"></label><label class="field">选项二给药频次<input id="schedule2" maxlength="100" placeholder="填写与剂量二对应的频次"></label></div><label class="field selection-field">本次选择<select id="alternative"><option value="">请明确选择</option><option value="0">选项一</option><option value="1">选项二</option></select></label></div>
+        </section>
+        <section id="patient-section" class="form-section">
+          <div class="section-title"><span class="step-number">2</span><div><h2>输入本次参数</h2><p id="parameter-hint">只填写当前计算方式需要的参数。</p></div></div>
+          <div class="field-grid">
+            <label id="height-field" class="field">身高<span class="unit-input"><input id="height" type="number" inputmode="decimal" step="any" placeholder="待填写"><span>cm</span></span></label>
+            <label id="weight-field" class="field">体重<span class="unit-input"><input id="weight" type="number" inputmode="decimal" step="any" placeholder="待填写"><span>kg</span></span></label>
+          </div>
+          <div id="renal-fields" hidden><div class="field-grid"><label class="field">已核对的肾功能参数<span class="unit-input"><input id="renal-value" type="number" inputmode="decimal" step="any" placeholder="待填写"><span>mL/min</span></span></label><label class="field">参数来源 / 方法<input id="renal-method" maxlength="120" placeholder="记录测量或估算方法"></label></div><p class="field-hint">本接口使用 mL/min，不自动将 mL/min/1.73m² 的 eGFR 换算为同一数值。</p><label class="check-row"><input id="renal-confirmed" type="checkbox"><span>已核对肾功能参数的方法、单位和适用性。</span></label></div>
+          <p id="fixed-hint" class="field-hint" hidden>固定剂量无需输入身高、体重。</p>
+        </section>
+        <section class="form-section verification-section">
+          <div class="section-title"><span class="step-number">3</span><div><h2>记录依据并核对</h2><p>修改任何输入后，需要重新核对。</p></div></div>
+          <label class="field">计算依据<textarea id="reference" rows="2" maxlength="600" placeholder="填写医嘱 / 指南 / 方案名称，以及版本、页码或位置"></textarea></label>
+          <label class="field reviewer-field">核对人<input id="reviewer" maxlength="80" placeholder="姓名或工作署名"></label>
+          <label class="check-row main-confirmation"><input id="confirmed" type="checkbox"><span>我已核对本次方案、剂量系数、输入参数及给药频次。</span></label>
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+          <button id="calculate" class="primary-button" type="submit">计算并核对结果 <span aria-hidden="true">→</span></button>
+        </section>
+      </form>
+      <aside class="result-column">
+        <section class="result-panel" aria-live="polite" aria-atomic="true">
+          <div class="result-heading"><h2>本次结果</h2><span id="result-status" class="status-chip">待计算</span></div>
+          <div id="empty-result" class="empty-result"><div class="calculation-mark" aria-hidden="true"><span>数值</span><i>×</i><span>规则</span><b>=</b></div><h3>先核对，再计算</h3><p>结果将显示剂量、计算过程和依据。输入改变后，旧结果会立即清除。</p></div>
+          <div id="result-content" hidden><p id="result-item" class="result-item"></p><div id="quantities"></div><div id="calculation-basis" class="calculation-basis"></div><dl id="result-metadata"></dl><p class="rounding-note">显示保留 2 位小数；未进行临床剂量取整、剂量上限判断或自动减量。</p><details><summary>查看完整数值与计算记录</summary><pre id="raw-result"></pre></details><button id="copy" class="outline-button full-width" type="button">复制核对摘要</button></div>
+        </section>
+        <section class="scope-panel"><h3>自定义单药核对</h3><p>本页保留人工输入规则的算术计算。内置治疗方案请返回方案库选择。</p><p>报告自动匹配尚未接入。当前结果不构成自动处方。</p><span>无需账号 · 不上传输入数据</span></section>
+      </aside>
+    </div>
+    <footer>乳腺癌剂量计算工具 · 非商业学术授权 · 安卓 / Apple 芯片 Mac 测试版</footer>
+  </main>
+  <dialog id="about-dialog"><div class="dialog-body"><button id="about-close" class="dialog-close" type="button" aria-label="关闭使用说明">×</button><p class="eyebrow">使用说明</p><h2>一套核心，两端一致。</h2><p>这是由原 Windows 程序的算术逻辑迁移而来的测试版。支持 8 类计算方式，安卓与 Mac 使用同一份核心。</p><h3>如何使用</h3><ol><li>选择方式并输入经过核对的剂量系数。</li><li>填写所需参数、计算依据及核对人。</li><li>确认后计算，查看公式与结果，再按需复制摘要。</li></ol><h3>数据与边界</h3><p>输入只保留于当前窗口内存；关闭、刷新或清空后不会恢复。不联网读取病例，不自动选方案，不自动进行临床剂量调整。</p><p>体表面积及输入范围沿用原程序的实现，不代表它们已通过临床验证。报告识别仍在恢复中。</p><p>仅限于学术交流，严禁商业用途<br>版权所有 GitHub @jiayi-sketch</p><p class="dialog-version">版本 0.2.2 · 2026-10-04 · 非商业学术授权</p></div></dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>

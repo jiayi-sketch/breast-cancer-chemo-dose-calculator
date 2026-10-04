@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <title>乳腺癌剂量计算 · 内置方案</title>
+  <link rel="stylesheet" href="catalogue.css">
+  <script defer src="core.browser.js"></script>
+  <script defer src="catalogue.browser.js"></script>
+  <script defer src="catalogue-engine.browser.js"></script>
+  <script defer src="catalogue-ui.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">＋</span><div><h1>乳腺癌剂量计算</h1><p>2026 CSCO · 内置方案与剂量核对</p></div></div>
+    <button id="about-open" class="quiet">版本与依据 <span>0.2.2</span></button>
+  </header>
+  <div class="usage-notice"><span>仅限于学术交流，严禁商业用途</span><span>版权所有 GitHub @jiayi-sketch</span></div>
+  <div class="workspace">
+    <aside class="sidebar">
+      <p class="eyebrow">治疗阶段</p>
+      <nav id="sections" aria-label="治疗阶段"></nav>
+      <div class="sidebar-note"><strong>医生 / 药师工作台</strong><p>先选择方案，再填写参数。序贯方案按阶段分别核对。</p><a href="manual.html">自定义单药算术核对 ↗</a></div>
+    </aside>
+    <main>
+      <div class="section-heading"><div><p class="eyebrow">方案库 / 2026</p><h2 id="section-title">术前新辅助治疗</h2></div><span id="catalogue-count" class="pill"></span></div>
+      <section class="patient-panel" aria-labelledby="patient-title">
+        <div class="panel-heading"><h3 id="patient-title">本次计算参数</h3><button id="clear-patient" class="quiet">清空参数</button></div>
+        <div class="patient-grid">
+          <label>身高 <span>cm</span><input id="height" inputmode="decimal" type="number" min="80" max="250" step="any" placeholder="填写身高" autocomplete="off"></label>
+          <label>体重 <span>kg</span><input id="weight" inputmode="decimal" type="number" min="20" max="350" step="any" placeholder="填写体重" autocomplete="off"></label>
+          <div class="bsa"><span>体表面积 BSA</span><strong id="bsa-value">—</strong><small>Mosteller · m²</small></div>
+        </div>
+        <fieldset id="renal-fields" hidden>
+          <legend>卡铂所需肾功能参数</legend>
+          <div class="renal-grid"><label>肾功能值 <span>mL/min</span><input id="renal-value" type="number" step="any" min="0" max="200" inputmode="decimal" placeholder="填写已核对的值" autocomplete="off"></label><label>测定 / 估算方法与来源<input id="renal-method" placeholder="填写方法及检查来源" autocomplete="off"></label></div>
+          <label class="check"><input id="renal-confirmed" type="checkbox">我已核对该参数适用于 Calvert 公式；单位为 mL/min。</label>
+          <p class="hint">不直接代入单位为 mL/min/1.73m² 的标准化 eGFR。本工具不估算或转换肾功能。</p>
+        </fieldset>
+      </section>
+      <div class="catalogue-layout">
+        <section class="catalogue-panel" aria-labelledby="catalogue-title">
+          <h3 id="catalogue-title">方案与推荐摘要</h3>
+          <label class="search-label">查找方案或药物<input id="search" type="search" placeholder="如 TCbHP、紫杉醇" autocomplete="off"></label>
+          <label>分型 / 类别<select id="subtype"><option value="">全部</option></select></label>
+          <p id="match-count" class="hint" aria-live="polite"></p>
+          <div id="entry-list" class="entry-list" aria-label="内置方案列表"></div>
+        </section>
+        <section class="detail-panel" id="detail" aria-labelledby="entry-title">
+          <p class="eyebrow" id="entry-type">内置方案</p><h3 id="entry-title"></h3>
+          <p id="entry-meta" class="metadata"></p>
+          <p id="entry-source" class="source"></p>
+          <p id="entry-eligibility"></p><p id="entry-notes" class="hint"></p>
+          <div id="reference-body" class="reference-body" hidden></div>
+          <div id="dose-workspace">
+            <div id="alternatives"></div>
+            <div class="review-box">
+              <label>本次核对人<input id="reviewer" placeholder="医生 / 药师姓名或代号" autocomplete="off"></label>
+              <label class="check"><input id="confirmed" type="checkbox">我已核对本次方案、阶段、剂量依据和输入参数，并判断其对患者的适用性。</label>
+              <div class="actions"><button id="calculate" class="primary">计算此方案</button><button id="copy" disabled>复制核对单</button></div>
+              <p id="message" role="status">填写参数并核对后计算。</p>
+            </div>
+            <div id="dose-table"></div>
+            <p class="hint">计算值为每次给药量；首剂与后续剂量、各药与各阶段不相加。区间保留，具体取值由临床确定。</p>
+            <details id="audit" hidden><summary>查看完整计算记录</summary><pre id="raw-result"></pre><pre id="summary-text"></pre></details>
+          </div>
+        </section>
+      </div>
+      <footer>已对照所提供的指南扫描页录入；未经独立临床验证。仅作专业人员的方案查阅与算术核对，不自动选方案、取整或调整剂量。</footer>
+    </main>
+  </div>
+  <dialog id="about-dialog"><h2>内置方案版 0.2.2</h2><p>52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡。覆盖原程序四个栏目；不代表指南全书数据库。</p><p>依据：用户提供的《2026 CSCO乳腺癌诊疗指南》，共 258 页。每项标注 PDF 页序与书页，目录版本 2026.10.02。</p><p>数值显示保留两位小数，内部计算不提前取整。未实现报告智能匹配、患者适用性判断、临床减量或累计剂量上限判断。</p><p>离线运行，无账户与上传。参数仅保存在本次窗口内存；复制操作会写入系统剪贴板。</p><p>仅限于学术交流，严禁商业用途<br>版权所有 GitHub @jiayi-sketch</p><p>源码公开测试版，适用非商业学术授权。目录录入核对不等于独立临床验证。</p><button id="about-close" class="primary">返回方案库</button></dialog>
+</body>
+</html>

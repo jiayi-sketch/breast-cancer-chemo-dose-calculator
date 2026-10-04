@@ -1,0 +1,9 @@
+{
+  "name": "@chemo/calculation-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "exports": "./src/index.ts",
+  "description": "Framework-independent arithmetic migration prototype; no clinical catalogue is approved."
+}

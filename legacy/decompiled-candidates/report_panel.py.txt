@@ -1,0 +1,399 @@
+# decompyle3 version 3.9.3
+# Python bytecode version base 3.8.0 (3413)
+# Decompiled from: Python 3.9.6 (default, May 22 2026, 11:13:45) 
+# [Clang 21.0.0 (clang-2100.1.1.101)]
+# Embedded file name: report_panel.py
+import re, tkinter as tk
+from tkinter import ttk, messagebox
+from tkinter.scrolledtext import ScrolledText
+from catalogue import REGIMENS
+from report_logic import parse_reports, subtype_from_fields, review_catalogue, suggest_stage, her2_guidance, UNKNOWN, CONFLICT, POS, NEG, LOW, SURGERIES, MENOPAUSE
+BLUE = "#0D649C"
+MUTED = "#60778A"
+EXAMPLES = {'HER2 2+ / FISH 阳性（虚拟）':{'biopsy':"【虚拟演示，不是真实病例】\n乳腺穿刺：浸润性癌。", 
+  'ihc':"ER(80%+)，PR(20%+)；HER2(2+)；Ki-67(35%)。",  'fish':"HER2 FISH：扩增，最终结论阳性。"}, 
+ '三阴性（虚拟）':{'biopsy':"【虚拟演示，不是真实病例】\n乳腺浸润性癌，组织学3级。", 
+  'ihc':"ER：阴性(0%)；PR：阴性(0%)；HER2：0；Ki-67：70%。"}, 
+ 'HER2 2+ 待 FISH（虚拟）':{'biopsy':"【虚拟演示，不是真实病例】\n浸润性乳腺癌。", 
+  'ihc':"ER(90%+)；PR(60%+)；HER2(2+)；Ki-67(25%)。",  'fish':"HER2 FISH：结果待出。"}}
+SOURCE_LABELS = {
+  'biopsy': "穿刺/术前病理", 'postop': "术后大病理", 'ihc': "免疫组化", 'fish': "HER2 FISH/ISH"}
+
+class ReportPanel(ttk.Frame):
+
+    def __init__(self, parent, open_callback, invalidate_callback):
+        super().__init__(parent, padding=14)
+        self.open_callback, self.invalidate_callback = open_callback, invalidate_callback
+        self.parsed = None
+        self.snapshot = ""
+        self.matches = []
+        self.matched_signature = None
+        self.busy = True
+        self.combo_widgets = {}
+        self.context_defaults = {}
+        ttk.Label(self, text="从报告到方案", font=('Microsoft YaHei UI', 19, 'bold'), foreground="#073B61").pack(anchor="w")
+        ttk.Label(self, text="报告组合预填阶段 → 确认四项信息 → 浏览方案目录；全部在本机处理。", foreground=MUTED).pack(anchor="w", pady=(5,
+                                                                                                             14))
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(fill="both", expand=True)
+        self.input_tab, self.review_tab, self.results_tab = [ttk.Frame((self.tabs), padding=16) for _ in range(3)]
+        for frame, title in zip((self.input_tab, self.review_tab, self.results_tab), ('1  粘贴报告',
+                                                                                      '2  核对与补充',
+                                                                                      '3  方案与剂量')):
+            self.tabs.add(frame, text=title)
+
+        self._build_input()
+        self._build_review()
+        self._build_results()
+        self.busy = False
+
+    def _build_input(self):
+        action = ttk.Frame(self.input_tab)
+        action.pack(fill="x", pady=(0, 8))
+        ttk.Label(action, text="分别粘贴报告后，点击右侧识别", foreground=BLUE).pack(side="left")
+        self.analyze_button = ttk.Button(action, text="识别报告  →", style="Accent.TButton", command=(self.analyze))
+        self.analyze_button.pack(side="right")
+        toolbar = ttk.Frame(self.input_tab)
+        toolbar.pack(fill="x", pady=(0, 8))
+        ttk.Button(toolbar, text="粘贴到当前报告", command=(self.paste)).pack(side="left")
+        ttk.Button(toolbar, text="清空全部报告", command=(self.clear)).pack(side="left", padx=6)
+        self.example_var = tk.StringVar(value=(next(iter(EXAMPLES))))
+        ttk.Combobox(toolbar, textvariable=(self.example_var), values=(list(EXAMPLES)), state="readonly", width=27).pack(side="left", padx=6)
+        ttk.Button(toolbar, text="载入虚拟示例", command=(self.example)).pack(side="left")
+        ttk.Label((self.input_tab), text="仅处理同一患者、同一病灶；换患者请先清空全部报告。粘贴按钮只替换当前标签，其他标签保留。\n报告原文分开保存于本次内存；识别结果显示来源。照片/扫描件请先人工转成文字。", foreground=MUTED, wraplength=760).pack(fill="x", pady=(0,
+                                                                                                                                                                                        8))
+        self.source_tabs = ttk.Notebook(self.input_tab)
+        self.source_tabs.pack(fill="both", expand=True)
+        self.reports = {}
+        hints = {
+          'biopsy': "穿刺或术前病理原文；没有这份报告可留空。不要混入另一患者或另一病灶。",
+          'postop': "术后大病理原文。资料齐全时会预填为术后治疗；病理大小、切缘等不自动转为已确认的临床风险条件。",
+          'ihc': "免疫组化原文：ER、PR、HER2 IHC、Ki-67等。自行核实取材时点，不混贴不同病灶或治疗前后结果。",
+          'fish': "仅粘贴HER2 FISH/ISH原文，保留检测名称和最终结论；未做可留空。IHC 2+需补充最终ISH判读。"}
+        for key, label in SOURCE_LABELS.items():
+            page = ttk.Frame((self.source_tabs), padding=8)
+            self.source_tabs.add(page, text=label)
+            ttk.Label(page, text=(hints[key]), foreground=MUTED, wraplength=740).pack(fill="x", pady=(0,
+                                                                                                      6))
+            editor = ScrolledText(page, wrap="word", height=8, width=40, font=('Microsoft YaHei UI',
+                                                                               11), padx=12,
+              pady=10,
+              relief="flat",
+              undo=False)
+            editor.pack(fill="both", expand=True)
+            editor.edit_modified(False)
+            editor.bind("<<Modified>>", self._text_changed)
+            self.reports[key] = editor
+
+        self.report = self.reports["biopsy"]
+
+    def _combo(self, frame, label, key, values, row, col, mapping):
+        ttk.Label(frame, text=label).grid(row=row, column=(col * 2), sticky="w", padx=(0,
+                                                                                       5), pady=5)
+        var = tk.StringVar(value=(values[0]))
+        mapping[key] = var
+        widget = ttk.Combobox(frame, textvariable=var, values=values, state="readonly", width=22)
+        widget.grid(row=row, column=(col * 2 + 1), sticky="ew", padx=(0, 12), pady=5)
+        widget.bind("<MouseWheel>", self._scroll_review)
+        self.combo_widgets[key] = widget
+        self.context_defaults[key] = values[0]
+        frame.columnconfigure((col * 2 + 1), weight=1)
+        var.trace_add("write", self._changed)
+
+    def _build_review(self):
+        self.review_footer = ttk.Frame(self.review_tab)
+        self.review_footer.pack(side="bottom", fill="x", pady=(8, 0))
+        canvas = tk.Canvas((self.review_tab), bg="#F3F9FD", highlightthickness=0)
+        self.review_canvas = canvas
+        scroll = ttk.Scrollbar((self.review_tab), orient="vertical", command=(canvas.yview))
+        canvas.configure(yscrollcommand=(scroll.set))
+        scroll.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        self.review_content = ttk.Frame(canvas)
+        window = canvas.create_window((0, 0), window=(self.review_content), anchor="nw")
+        self.review_content.bind("<Configure>", lambda _e: canvas.configure(scrollregion=(canvas.bbox("all"))))
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window, width=(event.width)))
+        self.bind_all("<MouseWheel>", (self._scroll_review), add="+")
+        self.analysis_tab = ttk.Frame((self.source_tabs), padding=8)
+        self.source_tabs.add((self.analysis_tab), text="识别结果 / 修正")
+        self.analysis_canvas = tk.Canvas((self.analysis_tab), bg="#F3F9FD", highlightthickness=0)
+        analysis_scroll = ttk.Scrollbar((self.analysis_tab), orient="vertical", command=(self.analysis_canvas.yview))
+        self.analysis_canvas.configure(yscrollcommand=(analysis_scroll.set))
+        analysis_scroll.pack(side="right", fill="y")
+        self.analysis_canvas.pack(side="left", fill="both", expand=True)
+        self.analysis_content = ttk.Frame((self.analysis_canvas), padding=2)
+        analysis_window = self.analysis_canvas.create_window((0, 0), window=(self.analysis_content), anchor="nw")
+        self.analysis_content.bind("<Configure>", lambda _e: self.analysis_canvas.configure(scrollregion=(self.analysis_canvas.bbox("all"))))
+        self.analysis_canvas.bind("<Configure>", lambda e: self.analysis_canvas.itemconfigure(analysis_window, width=(e.width)))
+        self.evidence = ttk.Treeview((self.analysis_content), columns=('field', 'value',
+                                                                       'source'), show="headings", height=5)
+        for key, title, width in (('field', '项目', 95), ('value', '自动识别', 110), ('source', '对应原文（点击下方核对/修正）', 670)):
+            self.evidence.heading(key, text=title)
+            self.evidence.column(key, width=width, anchor="w")
+
+        self.evidence.pack(fill="x", pady=(0, 8))
+        fields = ttk.Frame(self.analysis_content)
+        fields.pack(fill="x")
+        self.fields = {}
+        self._combo(fields, "ER", "ER", [UNKNOWN,NEG,POS,LOW,CONFLICT], 0, 0, self.fields)
+        self._combo(fields, "PR", "PR", [UNKNOWN, NEG, POS, CONFLICT], 0, 1, self.fields)
+        self._combo(fields, "HER2 IHC", "IHC", [UNKNOWN,"0","1+","2+","3+",CONFLICT], 1, 0, self.fields)
+        self._combo(fields, "FISH/ISH最终结论", "ISH", [UNKNOWN, NEG, POS, CONFLICT], 1, 1, self.fields)
+        ttk.Label(fields, text="修正依据").grid(row=2, column=0, sticky="w")
+        self.reason = tk.StringVar()
+        ttk.Entry(fields, textvariable=(self.reason)).grid(row=2, column=1, columnspan=3, sticky="ew", padx=(0,
+                                                                                                             16), pady=5)
+        self.reason.trace_add("write", self._changed)
+        self.subtype_text = tk.StringVar(value="等待识别与核对")
+        ttk.Label((self.review_content), textvariable=(self.subtype_text), foreground=BLUE, wraplength=760).pack(fill="x", pady=6)
+        self.her2_text = tk.StringVar(value=(her2_guidance(UNKNOWN, UNKNOWN)))
+        ttk.Label((self.analysis_content), textvariable=(self.her2_text), foreground=BLUE, wraplength=750).pack(fill="x", pady=(0,
+                                                                                                                                6))
+        self.stage_hint = tk.StringVar(value="请先识别报告；治疗阶段将按已录入的报告组合预填。")
+        ttk.Label((self.review_content), text="核对与识别", font=('Microsoft YaHei UI',
+                                                             16, 'bold'), foreground=BLUE).pack(anchor="w", pady=(6,
+                                                                                                                  12))
+        ttk.Label((self.review_content), textvariable=(self.stage_hint), foreground=MUTED, wraplength=760).pack(fill="x", pady=(0,
+                                                                                                                                10))
+        ttk.Button((self.review_content), text="查看 / 修正报告识别结果", command=(self.show_analysis)).pack(anchor="w", pady=(0,
+                                                                                                                     14))
+        context = ttk.LabelFrame((self.review_content), text="临床核对", padding=16)
+        context.pack(fill="x", pady=4)
+        self.context = {}
+        self._combo(context, "目前是否为新辅助治疗", "current_neo", ["未评估", "是", "否"], 0, 0, self.context)
+        self._combo(context, "绝经状态", "menopause", ["未评估"] + list(MENOPAUSE), 1, 0, self.context)
+        self._combo(context, "已完成的乳腺肿瘤术式", "surgery", ["未评估", "尚未手术"] + list(SURGERIES) + ["其他（需人工复核）"], 2, 0, self.context)
+        self._combo(context, "淋巴结有无转移", "nodes", ["未评估", "有转移", "无转移", "不确定/微转移"], 3, 0, self.context)
+        for row in range(4):
+            context.rowconfigure(row, pad=12)
+
+        self.phase_text = tk.StringVar(value="治疗阶段：待确认")
+        ttk.Label((self.review_content), textvariable=(self.phase_text), foreground=BLUE).pack(anchor="w", pady=12)
+        ttk.Label((self.review_content), text="报告组合仅用于预填，可手动更正；报告未录入不等于该检查或治疗从未进行。\n下一步为方案目录参考，不凭这四项认定化疗指征，也不默认缺失资料为正常或低风险。", foreground=MUTED, wraplength=760).pack(fill="x", pady=8)
+        ttk.Button((self.review_footer), text="← 返回报告", command=(lambda: self.tabs.select(self.input_tab))).pack(side="left")
+        self.match_button = ttk.Button((self.review_footer), text="查看对应方案目录  →", style="Accent.TButton", command=(self.generate))
+        self.match_button.pack(side="right")
+
+    def show_analysis(self):
+        self.tabs.select(self.input_tab)
+        self.source_tabs.select(self.analysis_tab)
+
+    def _scroll_review(self, event):
+        if not event.delta:
+            return
+        widget = event.widget
+        while widget is not None:
+            if widget in (self.review_canvas, self.analysis_canvas):
+                widget.yview_scroll(-1 if event.delta > 0 else 1, "units")
+                return "break"
+            else:
+                widget = getattr(widget, "master", None)
+
+    def _build_results(self):
+        row = ttk.Frame(self.results_tab)
+        row.pack(side="bottom", fill="x", pady=(8, 0))
+        ttk.Button(row, text="← 返回核对", command=(lambda: self.tabs.select(self.review_tab))).pack(side="left")
+        self.open_button = ttk.Button(row, text="进入所选方案的剂量计算", style="Accent.TButton", command=(self.open_selected), state="disabled")
+        self.open_button.pack(side="right")
+        self.choice_reason = tk.StringVar(value="请选择方案；列表不会自动代替医生决定。")
+        ttk.Label((self.results_tab), textvariable=(self.choice_reason), foreground=MUTED, wraplength=750).pack(side="bottom", fill="x", pady=8)
+        self.result_title = tk.StringVar(value="等待匹配")
+        ttk.Label((self.results_tab), textvariable=(self.result_title), foreground=BLUE, font=('Microsoft YaHei UI',
+                                                                                               15,
+                                                                                               'bold')).pack(anchor="w", pady=(0,
+                                                                                                                               10))
+        self.result_notes = ScrolledText((self.results_tab), wrap="word", height=7, font=('Microsoft YaHei UI',
+                                                                                          10), padx=12, pady=10, relief="flat")
+        self.result_notes.pack(fill="x", pady=(0, 10))
+        self.result_notes.configure(state="disabled")
+        self.results = ttk.Treeview((self.results_tab), columns=('name', 'level', 'pages'), show="headings", selectmode="browse")
+        for (key, label, width) in (('name', '目录方案（需医生选定）', 400), ('level', '用途 / 分层状态', 280),
+                                    ('pages', '指南PDF页码', 180)):
+            self.results.heading(key, text=label)
+            self.results.column(key, width=width, anchor="w")
+
+        scrollbar = ttk.Scrollbar((self.results_tab), orient="vertical", command=(self.results.yview))
+        self.results.configure(yscrollcommand=(scrollbar.set))
+        scrollbar.pack(side="right", fill="y")
+        self.results.pack(fill="both", expand=True)
+        self.results.bind("<<TreeviewSelect>>", self._selected)
+
+    def _notes(self, content):
+        self.result_notes.configure(state="normal")
+        self.result_notes.delete("1.0", "end")
+        self.result_notes.insert("1.0", content)
+        self.result_notes.configure(state="disabled")
+
+    def _changed(self, *_):
+        if self.busy:
+            return
+        current = self.context["current_neo"].get()
+        self.phase_text.set("治疗阶段：" + self.phase_name())
+        (suggested, basis) = suggest_stage(self._source_texts())
+        if not self.parsed:
+            self.stage_hint.set("请先识别报告；治疗阶段将按已录入的报告组合预填。")
+        else:
+            self.stage_hint.set(basis + (" 当前已手动更正，以您的选择为准。" if current != suggested else ""))
+        self.matches = []
+        self.matched_signature = None
+        for iid in self.results.get_children():
+            self.results.delete(iid)
+
+        self.open_button.configure(state="disabled")
+        self.result_title.set("资料已变更，请重新匹配")
+        self.choice_reason.set("请选择方案；列表不会自动代替医生决定。")
+        self._notes("")
+        self.invalidate_callback()
+        values = {k: v.get() for k, v in self.fields.items()}
+        (subtype, errors, notes) = subtype_from_fields(values)
+        self.subtype_text.set("分型核对：" + (subtype or "待明确") + " · " + (errors or notes)[0] if errors or notes else "")
+        self.her2_text.set(her2_guidance(values["IHC"], values["ISH"]))
+
+    def phase_name(self):
+        return {'是':"术前新辅助治疗", 
+         '否':"术后治疗（既往新辅助情况未核实）"}.get(self.context["current_neo"].get(), "待确认")
+
+    def _source_texts(self):
+        return {SOURCE_LABELS[key]: editor.get("1.0", "end-1c") for key, editor in self.reports.items()}
+
+    def _report_snapshot(self):
+        return tuple(self._source_texts().items())
+
+    def _text_changed(self, _event=None):
+        if not any((editor.edit_modified() for editor in self.reports.values())):
+            return
+        for editor in self.reports.values():
+            editor.edit_modified(False)
+
+        if self.busy:
+            return
+        self._invalidate_report()
+
+    def _invalidate_report(self):
+        self.busy = True
+        (self.parsed, self.snapshot) = (None, '')
+        for var in self.fields.values():
+            var.set(UNKNOWN)
+
+        for (key, var) in self.context.items():
+            var.set(self.context_defaults[key])
+
+        self.reason.set("")
+        for iid in self.evidence.get_children():
+            self.evidence.delete(iid)
+
+        for (index, (key, editor)) in enumerate(self.reports.items()):
+            self.source_tabs.tab(index, text=(SOURCE_LABELS[key] + (" ●" if editor.get("1.0", "end-1c").strip() else "")))
+
+        self.busy = False
+        self._changed()
+
+    def clear(self):
+        for editor in self.reports.values():
+            editor.delete("1.0", "end")
+            editor.edit_modified(False)
+
+        self._invalidate_report()
+        self.tabs.select(self.input_tab)
+
+    def paste(self):
+        selected = self.source_tabs.index(self.source_tabs.select())
+        if selected >= len(self.reports):
+            messagebox.showinfo("选择报告输入区", "请先选择穿刺/术前病理、术后大病理、免疫组化或FISH标签。", parent=self)
+            return
+        try:
+            value = self.clipboard_get()
+        except tk.TclError:
+            messagebox.showinfo("剪贴板", "剪贴板里没有可粘贴的文字。", parent=self)
+            return
+        key = list(self.reports)[selected]
+        editor = self.reports[key]
+        editor.delete("1.0", "end")
+        editor.insert("1.0", value)
+        editor.edit_modified(True)
+        self._text_changed()
+
+    def example(self):
+        self.clear()
+        for (key, text) in EXAMPLES[self.example_var.get()].items():
+            self.reports[key].insert("1.0", text)
+
+        self._text_changed()
+        self.source_tabs.select(2)
+
+    def analyzeParse error at or near `LOAD_FAST' instruction at offset 0
+
+    def _inputs(self):
+        values = {k: v.get() for k, v in self.fields.items()}
+        context = {k: v.get() for k, v in self.context.items()}
+        ish_evidence = self.parsed["ISH"]["evidence"] if self.parsed else []
+        unresolved = bool(self.parsed and self.parsed["ISH"]["value"] == UNKNOWN and ish_evidence)
+        context["ish_unresolved"] = unresolved and not all((re.search("未做|未行|未检测|not\\s+(?:done|performed)", item, re.I) for item in ish_evidence))
+        return (
+         values, context)
+
+    def _signature(self):
+        (values, context) = self._inputs()
+        return (
+         self._report_snapshot(), repr(sorted(values.items())), repr(sorted(context.items())), self.reason.get())
+
+    def generate(self):
+        if self.parsed is None or self.snapshot != self._report_snapshot():
+            messagebox.showinfo("请先识别", "报告已更改或尚未识别，请先点击“识别报告”。", parent=self)
+            self.tabs.select(self.input_tab)
+            return
+        (values, context) = self._inputs()
+        changed = [k for k in values if values[k] != self.parsed[k]["value"]]
+        if changed:
+            if not self.reason.get().strip():
+                messagebox.showwarning("填写修正依据", ("已手工修改 " + "、".join(changed) + "，请填写修正依据。"), parent=self)
+                return
+            result = review_catalogue(values, context, REGIMENS)
+            for iid in self.results.get_children():
+                self.results.delete(iid)
+
+            self.matches = result["matches"] if (not result["errors"]) else ([])
+            self.matched_signature = self._signature()
+            title = "新辅助" if context["current_neo"] == "是" else ("术后" if context["current_neo"] == "否" else "待确认") + " · " + (result["subtype"] or "待明确") + " · 方案目录参考"
+            self.summary = title + "\n" + "；".join((label + "：" + context[key] for label, key in (('是否新辅助', 'current_neo'),
+                                                                                                  ('绝经状态', 'menopause'),
+                                                                                                  ('已完成术式', 'surgery'),
+                                                                                                  ('淋巴结转移', 'nodes'))))
+            self.summary += "\n仅目录检索，未作个体化风险分层；术后不等于此前未做过新辅助。"
+            self.result_title.set(title)
+            lines = []
+            if result["errors"]:
+                lines += ["待补充 / 核实："] + ["• " + e for e in result["errors"]]
+            lines += [self.summary] + result["references"] + result["notes"]
+            if self.matches:
+                lines += ["检索到 %d 个目录方案，并非均适用于本患者。需核对完整指南适用条件，由医生选定后计算。" % len(self.matches)]
+            if changed:
+                lines.append("已人工修正：" + "、".join(changed) + "；依据：" + self.reason.get())
+            self._notes("\n".join(lines))
+            for (index, match) in enumerate(self.matches):
+                r = match["regimen"]
+                self.results.insert("", "end", iid=(str(index)), values=(r["name"], match["level"], r["pages"]))
+
+        self.open_button.configure(state="disabled")
+        self.tabs.select(self.results_tab)
+
+    def _selected(self, _event=None):
+        selected = self.results.selection()
+        if selected:
+            if self.matches:
+                self.choice_reason.set(self.matches[int(selected[0])]["reason"])
+                self.open_button.configure(state="normal")
+
+    def open_selected(self):
+        selected = self.results.selection()
+        if not selected or self._signature() != self.matched_signature:
+            self._changed()
+            return
+        selected_match = self.matches[int(selected[0])]
+        signature = self.matched_signature
+        if not messagebox.askyesno("医生选定方案后计算", "本页仅为方案目录，未完成个体化风险或化疗指征评估。\n若已接受新辅助，不得直接重复整套初始辅助化疗。\n请确认已核对原始报告、完整指南、既往治疗及禁忌证，并由医生确定所选方案。\n\n是否进入该方案的理论剂量计算？", parent=self):
+            return
+        if self._signature() != signature or signature != self.matched_signature:
+            self._changed()
+            return
+        self.open_callback(selected_match, self.summary)

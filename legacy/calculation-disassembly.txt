@@ -1,0 +1,236 @@
+calc_bsa
+ 22:           0 LOAD_CONST           (80)
+               2 LOAD_FAST            (height_cm)
+               4 DUP_TOP
+               6 ROT_THREE
+               8 COMPARE_OP           (<=)
+              10 POP_JUMP_IF_FALSE    (to 20)
+              12 LOAD_CONST           (250)
+              14 COMPARE_OP           (<=)
+              16 POP_JUMP_IF_TRUE     (to 30)
+              18 JUMP_FORWARD         (to 22)
+         >>   20 POP_TOP
+
+ 23:     >>   22 LOAD_GLOBAL          (ValueError)
+              24 LOAD_CONST           ("身高须在80-250 cm范围内。")
+              26 CALL_FUNCTION        (1 positional argument)
+              28 RAISE_VARARGS        (exception instance)
+
+ 24:     >>   30 LOAD_CONST           (20)
+              32 LOAD_FAST            (weight_kg)
+              34 DUP_TOP
+              36 ROT_THREE
+              38 COMPARE_OP           (<=)
+              40 POP_JUMP_IF_FALSE    (to 50)
+              42 LOAD_CONST           (350)
+              44 COMPARE_OP           (<=)
+              46 POP_JUMP_IF_TRUE     (to 60)
+              48 JUMP_FORWARD         (to 52)
+         >>   50 POP_TOP
+
+ 25:     >>   52 LOAD_GLOBAL          (ValueError)
+              54 LOAD_CONST           ("体重须在20-350 kg范围内。")
+              56 CALL_FUNCTION        (1 positional argument)
+              58 RAISE_VARARGS        (exception instance)
+
+ 26:     >>   60 LOAD_GLOBAL          (math)
+              62 LOAD_METHOD          (sqrt)
+              64 LOAD_FAST            (height_cm)
+              66 LOAD_FAST            (weight_kg)
+              68 BINARY_MULTIPLY
+              70 LOAD_CONST           (3600.0)
+              72 BINARY_TRUE_DIVIDE
+              74 CALL_METHOD          (1 positional argument)
+              76 RETURN_VALUE
+
+calculate_item
+ 52:           0 LOAD_FAST            (item)
+               2 LOAD_CONST           ("kind")
+               4 BINARY_SUBSCR
+               6 LOAD_FAST            (item)
+               8 LOAD_CONST           ("dose")
+              10 BINARY_SUBSCR
+              12 ROT_TWO
+              14 STORE_FAST           (kind)
+              16 STORE_FAST           (dose)
+
+ 53:          18 LOAD_FAST            (kind)
+              20 LOAD_CONST           ("bsa")
+              22 COMPARE_OP           (==)
+              24 POP_JUMP_IF_FALSE    (to 42)
+
+ 54:          26 LOAD_FAST            (dose)
+              28 LOAD_FAST            (bsa)
+              30 BINARY_MULTIPLY
+              32 LOAD_CONST           (".2f")
+              34 FORMAT_VALUE         4
+              36 LOAD_CONST           (" mg/次")
+              38 BUILD_STRING         2
+              40 RETURN_VALUE
+
+ 55:     >>   42 LOAD_FAST            (kind)
+              44 LOAD_CONST           ("bsa_range")
+              46 COMPARE_OP           (==)
+              48 POP_JUMP_IF_FALSE    (to 110)
+
+ 56:          50 LOAD_FAST            (dose)
+              52 UNPACK_SEQUENCE      2
+              54 STORE_FAST           (lo)
+              56 STORE_FAST           (hi)
+
+ 57:          58 LOAD_FAST            (lo)
+              60 LOAD_FAST            (hi)
+              62 COMPARE_OP           (==)
+              64 POP_JUMP_IF_FALSE    (to 82)
+
+ 58:          66 LOAD_FAST            (lo)
+              68 LOAD_FAST            (bsa)
+              70 BINARY_MULTIPLY
+              72 LOAD_CONST           (".2f")
+              74 FORMAT_VALUE         4
+              76 LOAD_CONST           (" mg/次")
+              78 BUILD_STRING         2
+              80 RETURN_VALUE
+
+ 59:     >>   82 LOAD_FAST            (lo)
+              84 LOAD_FAST            (bsa)
+              86 BINARY_MULTIPLY
+              88 LOAD_CONST           (".2f")
+              90 FORMAT_VALUE         4
+              92 LOAD_CONST           ("-")
+              94 LOAD_FAST            (hi)
+              96 LOAD_FAST            (bsa)
+              98 BINARY_MULTIPLY
+             100 LOAD_CONST           (".2f")
+             102 FORMAT_VALUE         4
+             104 LOAD_CONST           (" mg/次")
+             106 BUILD_STRING         4
+             108 RETURN_VALUE
+
+ 60:     >>  110 LOAD_FAST            (kind)
+             112 LOAD_CONST           ("weight")
+             114 COMPARE_OP           (==)
+             116 POP_JUMP_IF_FALSE    (to 134)
+
+ 61:         118 LOAD_FAST            (dose)
+             120 LOAD_FAST            (weight_kg)
+             122 BINARY_MULTIPLY
+             124 LOAD_CONST           (".2f")
+             126 FORMAT_VALUE         4
+             128 LOAD_CONST           (" mg/次")
+             130 BUILD_STRING         2
+             132 RETURN_VALUE
+
+ 62:     >>  134 LOAD_FAST            (kind)
+             136 LOAD_CONST           ("weight_seq")
+             138 COMPARE_OP           (==)
+             140 POP_JUMP_IF_FALSE    (to 180)
+
+ 63:         142 LOAD_CONST           ("首剂")
+             144 LOAD_FAST            (dose)
+             146 LOAD_CONST           (0)
+             148 BINARY_SUBSCR
+             150 LOAD_FAST            (weight_kg)
+             152 BINARY_MULTIPLY
+             154 LOAD_CONST           (".2f")
+             156 FORMAT_VALUE         4
+             158 LOAD_CONST           (" mg；后续")
+             160 LOAD_FAST            (dose)
+             162 LOAD_CONST           (1)
+             164 BINARY_SUBSCR
+             166 LOAD_FAST            (weight_kg)
+             168 BINARY_MULTIPLY
+             170 LOAD_CONST           (".2f")
+             172 FORMAT_VALUE         4
+             174 LOAD_CONST           (" mg/次")
+             176 BUILD_STRING         5
+             178 RETURN_VALUE
+
+ 64:     >>  180 LOAD_FAST            (kind)
+             182 LOAD_CONST           ("fixed")
+             184 COMPARE_OP           (==)
+             186 POP_JUMP_IF_FALSE    (to 200)
+
+ 65:         188 LOAD_FAST            (dose)
+             190 LOAD_CONST           ("g")
+             192 FORMAT_VALUE         4
+             194 LOAD_CONST           (" mg/次（固定剂量）")
+             196 BUILD_STRING         2
+             198 RETURN_VALUE
+
+ 66:     >>  200 LOAD_FAST            (kind)
+             202 LOAD_CONST           ("fixed_seq")
+             204 COMPARE_OP           (==)
+             206 POP_JUMP_IF_FALSE    (to 238)
+
+ 67:         208 LOAD_CONST           ("首剂")
+             210 LOAD_FAST            (dose)
+             212 LOAD_CONST           (0)
+             214 BINARY_SUBSCR
+             216 LOAD_CONST           ("g")
+             218 FORMAT_VALUE         4
+             220 LOAD_CONST           (" mg；后续")
+             222 LOAD_FAST            (dose)
+             224 LOAD_CONST           (1)
+             226 BINARY_SUBSCR
+             228 LOAD_CONST           ("g")
+             230 FORMAT_VALUE         4
+             232 LOAD_CONST           (" mg/次")
+             234 BUILD_STRING         5
+             236 RETURN_VALUE
+
+ 68:     >>  238 LOAD_FAST            (kind)
+             240 LOAD_CONST           ("fixed_alt")
+             242 COMPARE_OP           (==)
+             244 POP_JUMP_IF_FALSE    (to 250)
+
+ 69:         246 LOAD_CONST           ("按所选给药频次使用固定剂量")
+             248 RETURN_VALUE
+
+ 70:     >>  250 LOAD_FAST            (kind)
+             252 LOAD_CONST           ("auc")
+             254 COMPARE_OP           (==)
+             256 EXTENDED_ARG         (256)
+             258 POP_JUMP_IF_FALSE    (to 328)
+
+ 71:         260 LOAD_FAST            (gfr)
+             262 LOAD_CONST           (None)
+             264 COMPARE_OP           (is)
+             266 EXTENDED_ARG         (256)
+             268 POP_JUMP_IF_FALSE    (to 274)
+
+ 72:         270 LOAD_CONST           ("需输入GFR/CrCl后计算")
+             272 RETURN_VALUE
+
+ 73:     >>  274 LOAD_CONST           (0)
+             276 LOAD_FAST            (gfr)
+             278 DUP_TOP
+             280 ROT_THREE
+             282 COMPARE_OP           (<=)
+             284 EXTENDED_ARG         (256)
+             286 POP_JUMP_IF_FALSE    (to 298)
+             288 LOAD_CONST           (200)
+             290 COMPARE_OP           (<=)
+             292 EXTENDED_ARG         (256)
+             294 POP_JUMP_IF_TRUE     (to 308)
+             296 JUMP_FORWARD         (to 300)
+         >>  298 POP_TOP
+
+ 74:     >>  300 LOAD_GLOBAL          (ValueError)
+             302 LOAD_CONST           ("GFR/CrCl须在0-200 mL/min范围内。")
+             304 CALL_FUNCTION        (1 positional argument)
+             306 RAISE_VARARGS        (exception instance)
+
+ 75:     >>  308 LOAD_FAST            (dose)
+             310 LOAD_FAST            (gfr)
+             312 LOAD_CONST           (25)
+             314 BINARY_ADD
+             316 BINARY_MULTIPLY
+             318 LOAD_CONST           (".2f")
+             320 FORMAT_VALUE         4
+             322 LOAD_CONST           (" mg/次")
+             324 BUILD_STRING         2
+             326 RETURN_VALUE
+
+ 76:     >>  328 LOAD_CONST           ("—")
+             330 RETURN_VALUE

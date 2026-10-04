@@ -1,0 +1,38 @@
+# decompyle3 version 3.9.3
+# Python bytecode version base 3.8.0 (3413)
+# Decompiled from: Python 3.9.6 (default, May 22 2026, 11:13:45) 
+# [Clang 21.0.0 (clang-2100.1.1.101)]
+# Embedded file name: app_win7.py
+"""Win7/x86 entry point that initializes the bundled Tcl filesystem."""
+import ctypes, os, sys
+from pathlib import Path
+
+def _prime_tcl_filesystem():
+    if sys.platform != "win32":
+        return
+    bundle_root = getattr(sys, "_MEIPASS", None)
+    if bundle_root:
+        tcl_dll = Path(bundle_root) / "tcl86t.dll"
+    else:
+        env_root = Path(__file__).resolve().parents[1] / "win7-x86" / "env"
+        os.environ.setdefault("TCL_LIBRARY", str(env_root / "Library" / "lib" / "tcl8.6"))
+        os.environ.setdefault("TK_LIBRARY", str(env_root / "Library" / "lib" / "tk8.6"))
+        tcl_dll = env_root / "DLLs" / "tcl86t.dll"
+    tcl = ctypes.WinDLL(str(tcl_dll))
+    tcl.Tcl_FindExecutable.argtypes = [ctypes.c_char_p]
+    tcl.Tcl_CreateInterp.restype = ctypes.c_void_p
+    tcl.Tcl_EvalEx.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+    tcl.Tcl_EvalEx.restype = ctypes.c_int
+    tcl.Tcl_DeleteInterp.argtypes = [ctypes.c_void_p]
+    tcl.Tcl_FindExecutable(os.fsencode(sys.executable))
+    interp = tcl.Tcl_CreateInterp()
+    try:
+        tcl.Tcl_EvalEx(interp, b'pwd', -1, 0)
+    finally:
+        tcl.Tcl_DeleteInterp(interp)
+
+
+_prime_tcl_filesystem()
+from app import ClinicalApp
+if __name__ == "__main__":
+    ClinicalApp().mainloop()

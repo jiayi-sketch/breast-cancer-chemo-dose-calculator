@@ -1,0 +1,533 @@
+# pydisasm version 6.1.8
+# Python bytecode 3.8.0 (3413)
+# Disassembled from Python 3.9.6 (default, Aug 25 2026, 21:26:21) 
+# [Clang 21.0.0 (clang-2100.3.34.2)]
+# Timestamp in code: 0 (1970-01-01 08:00:00)
+# Source code size mod 2**32: 0 bytes
+# Method Name:       <module>
+# Filename:          catalogue.py
+# Argument count:    0
+# Position-only argument count: 0
+# Keyword-only arguments: 0
+# Number of locals:  0
+# Stack size:        10
+# Flags:             0x00000040 (NOFREE)
+# First Line:        1
+# Constants:
+#    0: 'Version 3 additions checked against PDF pages 55, 68, 74, 75, 82-84.'
+#    1: 0
+#    2: ('deepcopy',)
+#    3: ('REGIMENS', 'REFERENCE_CARDS', 'SOURCE_TITLE', 'med')
+#    4: 'HER2阳性'
+#    5: ''
+#    6: <Code38 code object append at 0x10077daf0, file catalogue.py>, line 9
+#    7: 'append'
+#    8: 'TCbH'
+#    9: '多西他赛'
+#   10: 'bsa'
+#   11: 75
+#   12: 'd1，每21天'
+#   13: '共6周期'
+#   14: '卡铂'
+#   15: 'auc'
+#   16: 6
+#   17: '曲妥珠单抗'
+#   18: 'weight_seq'
+#   19: (8, 6)
+#   20: '完成1年'
+#   21: '68、74'
+#   22: 'TC + H'
+#   23: '共4周期'
+#   24: '环磷酰胺'
+#   25: 600
+#   26: '68、70、74'
+#   27: 'TH（紫杉醇周疗）'
+#   28: '紫杉醇'
+#   29: 80
+#   30: 'd1，每7天'
+#   31: '共12次'
+#   32: (4, 2)
+#   33: <Code38 code object <genexpr> at 0x10077dd30, file catalogue.py>, line 25
+#   34: '<genexpr>'
+#   35: (4, 6)
+#   36: 'TC（%s周期）'
+#   37: 'name'
+#   38: '75、78、81'
+#   39: 'pages'
+#   40: '4周期与6周期分别对应不同推荐层级，不能相互混用。'
+#   41: 'notes'
+#   42: 'drugs'
+#   43: '共%s周期'
+#   44: 'duration'
+#   45: 'AC → T（多西他赛）'
+#   46: 'AC → T（紫杉醇周疗）'
+#   47: '密集AC → 密集T'
+#   48: 'AC'
+#   49: 'TC（4周期）'
+#   50: 'TC（6周期）'
+#   51: 'section'
+#   52: '术后辅助治疗'
+#   53: 'subtype'
+#   54: '三阴性'
+#   55: '激素受体阳性'
+#   56: '83、84；剂量：'
+#   57: '按 PDF83 风险分层'
+#   58: 'level'
+#   59: 'HR阳性/HER2阴性，且医生已确认辅助化疗获益与指征。'
+#   60: 'eligibility'
+#   61: 'TAC'
+#   62: '多柔比星'
+#   63: 50
+#   64: 500
+#   65: '82、83'
+#   66: 'HR阳性/HER2阴性：化疗分层'
+#   67: '83、84'
+#   68: '高复发风险：≥4个阳性淋巴结，或1–3个阳性且有其他高危因素。\n其他化疗分层：1–3个阳性但无其他危险因素，或淋巴结阴性且有高Ki-67、肿瘤>2cm、年龄<35岁等因素之一。\n化疗获益须结合绝经状态、分期、病理及必要时多基因检测；不凭Ki-67单项自动判定。'
+#   69: ('section', 'subtype', 'title', 'pages', 'body')
+#   70: None
+#   71: ('HER2阳性', '')
+# Names:
+#    0: __doc__
+#    1: copy
+#    2: deepcopy
+#    3: clinical_data
+#    4: REGIMENS
+#    5: BASE
+#    6: REFERENCE_CARDS
+#    7: BASE_CARDS
+#    8: SOURCE_TITLE
+#    9: med
+#   10: append
+#   11: next
+#   12: tc
+#   13: remove
+#   14: count
+#   15: item
+#   16: drug
+#   17: hr_names
+#   18: list
+#   19: r
+#   20: dict
+  1:           0 LOAD_CONST           ("Version 3 additions checked against PDF pages 55, 68, 74, 75, 82-84.")
+               2 STORE_NAME           (__doc__)
+
+  2:           4 LOAD_CONST           (0)
+               6 LOAD_CONST           (('deepcopy',))
+               8 IMPORT_NAME          (copy)
+              10 IMPORT_FROM          (deepcopy)
+              12 STORE_NAME           (deepcopy)
+              14 POP_TOP
+
+  3:          16 LOAD_CONST           (0)
+              18 LOAD_CONST           (('REGIMENS', 'REFERENCE_CARDS', 'SOURCE_TITLE', 'med'))
+              20 IMPORT_NAME          (clinical_data)
+              22 IMPORT_FROM          (REGIMENS)
+              24 STORE_NAME           (BASE)
+              26 IMPORT_FROM          (REFERENCE_CARDS)
+              28 STORE_NAME           (BASE_CARDS)
+              30 IMPORT_FROM          (SOURCE_TITLE)
+              32 STORE_NAME           (SOURCE_TITLE)
+              34 IMPORT_FROM          (med)
+              36 STORE_NAME           (med)
+              38 POP_TOP
+
+  5:          40 LOAD_NAME            (deepcopy)
+              42 LOAD_NAME            (BASE)
+              44 CALL_FUNCTION        (1 positional argument)
+              46 STORE_NAME           (REGIMENS)
+
+  6:          48 LOAD_NAME            (deepcopy)
+              50 LOAD_NAME            (BASE_CARDS)
+              52 CALL_FUNCTION        (1 positional argument)
+              54 STORE_NAME           (REFERENCE_CARDS)
+
+  9:          56 LOAD_CONST           (('HER2阳性', ''))
+              58 LOAD_CONST           (<Code38 code object append at 0x10077daf0, file catalogue.py>, line 9)
+              60 LOAD_CONST           ("append")
+              62 MAKE_FUNCTION        (default)
+              64 STORE_NAME           (append)
+
+ 16:          66 LOAD_NAME            (append)
+              68 LOAD_CONST           ("TCbH")
+              70 LOAD_NAME            (med)
+              72 LOAD_CONST           ("多西他赛")
+              74 LOAD_CONST           ("bsa")
+              76 LOAD_CONST           (75)
+              78 LOAD_CONST           ("d1，每21天")
+              80 LOAD_CONST           ("共6周期")
+              82 CALL_FUNCTION        (5 positional arguments)
+
+ 17:          84 LOAD_NAME            (med)
+              86 LOAD_CONST           ("卡铂")
+              88 LOAD_CONST           ("auc")
+              90 LOAD_CONST           (6)
+              92 LOAD_CONST           ("d1，每21天")
+              94 LOAD_CONST           ("共6周期")
+              96 CALL_FUNCTION        (5 positional arguments)
+
+ 18:          98 LOAD_NAME            (med)
+             100 LOAD_CONST           ("曲妥珠单抗")
+             102 LOAD_CONST           ("weight_seq")
+             104 LOAD_CONST           ((8, 6))
+             106 LOAD_CONST           ("d1，每21天")
+             108 LOAD_CONST           ("完成1年")
+             110 CALL_FUNCTION        (5 positional arguments)
+
+ 16:         112 BUILD_LIST           3
+
+ 18:         114 LOAD_CONST           ("68、74")
+
+ 16:         116 CALL_FUNCTION        (3 positional arguments)
+             118 POP_TOP
+
+ 19:         120 LOAD_NAME            (append)
+             122 LOAD_CONST           ("TC + H")
+             124 LOAD_NAME            (med)
+             126 LOAD_CONST           ("多西他赛")
+             128 LOAD_CONST           ("bsa")
+             130 LOAD_CONST           (75)
+             132 LOAD_CONST           ("d1，每21天")
+             134 LOAD_CONST           ("共4周期")
+             136 CALL_FUNCTION        (5 positional arguments)
+
+ 20:         138 LOAD_NAME            (med)
+             140 LOAD_CONST           ("环磷酰胺")
+             142 LOAD_CONST           ("bsa")
+             144 LOAD_CONST           (600)
+             146 LOAD_CONST           ("d1，每21天")
+             148 LOAD_CONST           ("共4周期")
+             150 CALL_FUNCTION        (5 positional arguments)
+
+ 21:         152 LOAD_NAME            (med)
+             154 LOAD_CONST           ("曲妥珠单抗")
+             156 LOAD_CONST           ("weight_seq")
+             158 LOAD_CONST           ((8, 6))
+             160 LOAD_CONST           ("d1，每21天")
+             162 LOAD_CONST           ("完成1年")
+             164 CALL_FUNCTION        (5 positional arguments)
+
+ 19:         166 BUILD_LIST           3
+
+ 21:         168 LOAD_CONST           ("68、70、74")
+
+ 19:         170 CALL_FUNCTION        (3 positional arguments)
+             172 POP_TOP
+
+ 22:         174 LOAD_NAME            (append)
+             176 LOAD_CONST           ("TH（紫杉醇周疗）")
+             178 LOAD_NAME            (med)
+             180 LOAD_CONST           ("紫杉醇")
+             182 LOAD_CONST           ("bsa")
+             184 LOAD_CONST           (80)
+             186 LOAD_CONST           ("d1，每7天")
+             188 LOAD_CONST           ("共12次")
+             190 CALL_FUNCTION        (5 positional arguments)
+
+ 23:         192 LOAD_NAME            (med)
+             194 LOAD_CONST           ("曲妥珠单抗")
+             196 LOAD_CONST           ("weight_seq")
+             198 LOAD_CONST           ((4, 2))
+             200 LOAD_CONST           ("d1，每7天")
+             202 LOAD_CONST           ("完成1年")
+             204 CALL_FUNCTION        (5 positional arguments)
+
+ 22:         206 BUILD_LIST           2
+
+ 23:         208 LOAD_CONST           ("68、70、74")
+
+ 22:         210 CALL_FUNCTION        (3 positional arguments)
+             212 POP_TOP
+
+ 25:         214 LOAD_NAME            (next)
+             216 LOAD_CONST           (<Code38 code object <genexpr> at 0x10077dd30, file catalogue.py>, line 25)
+             218 LOAD_CONST           ("<genexpr>")
+             220 MAKE_FUNCTION        (No arguments)
+             222 LOAD_NAME            (REGIMENS)
+             224 GET_ITER
+             226 CALL_FUNCTION        (1 positional argument)
+             228 CALL_FUNCTION        (1 positional argument)
+             230 STORE_NAME           (tc)
+
+ 26:         232 LOAD_NAME            (REGIMENS)
+             234 LOAD_METHOD          (remove)
+             236 LOAD_NAME            (tc)
+             238 CALL_METHOD          (1 positional argument)
+             240 POP_TOP
+
+ 27:         242 LOAD_CONST           ((4, 6))
+             244 GET_ITER
+         >>  246 FOR_ITER             (to 326)
+             248 STORE_NAME           (count)
+
+ 28:         250 LOAD_NAME            (deepcopy)
+             252 LOAD_NAME            (tc)
+             254 CALL_FUNCTION        (1 positional argument)
+             256 STORE_NAME           (item)
+
+ 29:         258 LOAD_CONST           ("TC（%s周期）")
+             260 LOAD_NAME            (count)
+             262 BINARY_MODULO
+             264 LOAD_NAME            (item)
+             266 LOAD_CONST           ("name")
+             268 STORE_SUBSCR
+
+ 30:         270 LOAD_CONST           ("75、78、81")
+             272 LOAD_NAME            (item)
+             274 LOAD_CONST           ("pages")
+             276 STORE_SUBSCR
+
+ 31:         278 LOAD_CONST           ("4周期与6周期分别对应不同推荐层级，不能相互混用。")
+             280 LOAD_NAME            (item)
+             282 LOAD_CONST           ("notes")
+             284 STORE_SUBSCR
+
+ 32:         286 LOAD_NAME            (item)
+             288 LOAD_CONST           ("drugs")
+             290 BINARY_SUBSCR
+             292 GET_ITER
+         >>  294 FOR_ITER             (to 314)
+             296 STORE_NAME           (drug)
+
+ 33:         298 LOAD_CONST           ("共%s周期")
+             300 LOAD_NAME            (count)
+             302 BINARY_MODULO
+             304 LOAD_NAME            (drug)
+             306 LOAD_CONST           ("duration")
+             308 STORE_SUBSCR
+             310 EXTENDED_ARG         (256)
+             312 JUMP_ABSOLUTE        (to 294)
+
+ 34:     >>  314 LOAD_NAME            (REGIMENS)
+             316 LOAD_METHOD          (append)
+             318 LOAD_NAME            (item)
+             320 CALL_METHOD          (1 positional argument)
+             322 POP_TOP
+             324 JUMP_ABSOLUTE        (to 246)
+
+ 38:     >>  326 LOAD_CONST           ("AC → T（多西他赛）")
+             328 LOAD_CONST           ("AC → T（紫杉醇周疗）")
+             330 LOAD_CONST           ("密集AC → 密集T")
+             332 LOAD_CONST           ("AC")
+             334 LOAD_CONST           ("TC（4周期）")
+             336 LOAD_CONST           ("TC（6周期）")
+             338 BUILD_SET            6
+             340 STORE_NAME           (hr_names)
+
+ 39:         342 LOAD_NAME            (list)
+             344 LOAD_NAME            (REGIMENS)
+             346 CALL_FUNCTION        (1 positional argument)
+             348 GET_ITER
+         >>  350 FOR_ITER             (to 458)
+             352 STORE_NAME           (r)
+
+ 40:         354 LOAD_NAME            (r)
+             356 LOAD_CONST           ("section")
+             358 BINARY_SUBSCR
+             360 LOAD_CONST           ("术后辅助治疗")
+             362 COMPARE_OP           (==)
+             364 EXTENDED_ARG         (256)
+             366 POP_JUMP_IF_FALSE    (to 350)
+             368 LOAD_NAME            (r)
+             370 LOAD_CONST           ("subtype")
+             372 BINARY_SUBSCR
+             374 LOAD_CONST           ("三阴性")
+             376 COMPARE_OP           (==)
+             378 EXTENDED_ARG         (256)
+             380 POP_JUMP_IF_FALSE    (to 350)
+             382 LOAD_NAME            (r)
+             384 LOAD_CONST           ("name")
+             386 BINARY_SUBSCR
+             388 LOAD_NAME            (hr_names)
+             390 COMPARE_OP           (in)
+             392 EXTENDED_ARG         (256)
+             394 POP_JUMP_IF_FALSE    (to 350)
+
+ 41:         396 LOAD_NAME            (deepcopy)
+             398 LOAD_NAME            (r)
+             400 CALL_FUNCTION        (1 positional argument)
+             402 STORE_NAME           (item)
+
+ 42:         404 LOAD_CONST           ("激素受体阳性")
+             406 LOAD_NAME            (item)
+             408 LOAD_CONST           ("subtype")
+             410 STORE_SUBSCR
+
+ 43:         412 LOAD_CONST           ("83、84；剂量：")
+             414 LOAD_NAME            (r)
+             416 LOAD_CONST           ("pages")
+             418 BINARY_SUBSCR
+             420 BINARY_ADD
+             422 LOAD_NAME            (item)
+             424 LOAD_CONST           ("pages")
+             426 STORE_SUBSCR
+
+ 44:         428 LOAD_CONST           ("按 PDF83 风险分层")
+             430 LOAD_NAME            (item)
+             432 LOAD_CONST           ("level")
+             434 STORE_SUBSCR
+
+ 45:         436 LOAD_CONST           ("HR阳性/HER2阴性，且医生已确认辅助化疗获益与指征。")
+             438 LOAD_NAME            (item)
+             440 LOAD_CONST           ("eligibility")
+             442 STORE_SUBSCR
+
+ 46:         444 LOAD_NAME            (REGIMENS)
+             446 LOAD_METHOD          (append)
+             448 LOAD_NAME            (item)
+             450 CALL_METHOD          (1 positional argument)
+             452 POP_TOP
+             454 EXTENDED_ARG         (256)
+             456 JUMP_ABSOLUTE        (to 350)
+
+ 47:     >>  458 LOAD_NAME            (append)
+             460 LOAD_CONST           ("TAC")
+             462 LOAD_NAME            (med)
+             464 LOAD_CONST           ("多西他赛")
+             466 LOAD_CONST           ("bsa")
+             468 LOAD_CONST           (75)
+             470 LOAD_CONST           ("d1，每21天")
+             472 LOAD_CONST           ("共6周期")
+             474 CALL_FUNCTION        (5 positional arguments)
+
+ 48:         476 LOAD_NAME            (med)
+             478 LOAD_CONST           ("多柔比星")
+             480 LOAD_CONST           ("bsa")
+             482 LOAD_CONST           (50)
+             484 LOAD_CONST           ("d1，每21天")
+             486 LOAD_CONST           ("共6周期")
+             488 CALL_FUNCTION        (5 positional arguments)
+
+ 49:         490 LOAD_NAME            (med)
+             492 LOAD_CONST           ("环磷酰胺")
+             494 LOAD_CONST           ("bsa")
+             496 LOAD_CONST           (500)
+             498 LOAD_CONST           ("d1，每21天")
+             500 LOAD_CONST           ("共6周期")
+             502 CALL_FUNCTION        (5 positional arguments)
+
+ 47:         504 BUILD_LIST           3
+
+ 49:         506 LOAD_CONST           ("82、83")
+
+ 49:         508 LOAD_CONST           ("激素受体阳性")
+
+ 47:         510 CALL_FUNCTION        (4 positional arguments)
+             512 POP_TOP
+
+ 50:         514 LOAD_NAME            (REFERENCE_CARDS)
+             516 LOAD_METHOD          (append)
+             518 LOAD_NAME            (dict)
+
+ 51:         520 LOAD_CONST           ("术后辅助治疗")
+
+ 51:         522 LOAD_CONST           ("激素受体阳性")
+
+ 51:         524 LOAD_CONST           ("HR阳性/HER2阴性：化疗分层")
+
+ 52:         526 LOAD_CONST           ("83、84")
+
+ 52:         528 LOAD_CONST           ("高复发风险：≥4个阳性淋巴结，或1–3个阳性且有其他高危因素。\n其他化疗分层：1–3个阳性但无其他危险因素，或淋巴结阴性且有高Ki-67、肿瘤>2cm、年龄<35岁等因素之一。\n化疗获益须结合绝经状态、分期、病理及必要时多基因检测；不凭Ki-67单项自动判定。")
+
+ 50:         530 LOAD_CONST           (('section', 'subtype', 'title', 'pages', 'body'))
+             532 CALL_FUNCTION_KW     (5 total positional and keyword args)
+             534 CALL_METHOD          (1 positional argument)
+             536 POP_TOP
+             538 LOAD_CONST           (None)
+             540 RETURN_VALUE
+
+
+# Method Name:       append
+# Filename:          catalogue.py
+# Argument count:    5
+# Position-only argument count: 0
+# Keyword-only arguments: 0
+# Number of locals:  5
+# Stack size:        12
+# Flags:             0x00000043 (NOFREE | NEWLOCALS | OPTIMIZED)
+# First Line:        9
+# Constants:
+#    0: None
+#    1: '术后辅助治疗'
+#    2: '按术后风险分层，见对应推荐表'
+#    3: '已确认术后全身治疗指征；具体分层由医生复核。'
+#    4: ('section', 'subtype', 'name', 'level', 'pages', 'eligibility', 'drugs', 'notes')
+# Names:
+#    0: REGIMENS
+#    1: append
+#    2: dict
+# Varnames:
+#	name, drugs, pages, subtype, notes
+# Positional arguments:
+#	name, drugs, pages, subtype, notes
+ 10:           0 LOAD_GLOBAL          (REGIMENS)
+               2 LOAD_METHOD          (append)
+               4 LOAD_GLOBAL          (dict)
+               6 LOAD_CONST           ("术后辅助治疗")
+               8 LOAD_FAST            (subtype)
+              10 LOAD_FAST            (name)
+
+ 11:          12 LOAD_CONST           ("按术后风险分层，见对应推荐表")
+
+ 11:          14 LOAD_FAST            (pages)
+
+ 12:          16 LOAD_CONST           ("已确认术后全身治疗指征；具体分层由医生复核。")
+
+ 13:          18 LOAD_FAST            (drugs)
+
+ 13:          20 LOAD_FAST            (notes)
+
+ 10:          22 LOAD_CONST           (('section', 'subtype', 'name', 'level', 'pages', 'eligibility', 'drugs', 'notes'))
+              24 CALL_FUNCTION_KW     (8 total positional and keyword args)
+              26 CALL_METHOD          (1 positional argument)
+              28 POP_TOP
+              30 LOAD_CONST           (None)
+              32 RETURN_VALUE
+
+
+# Method Name:       <genexpr>
+# Filename:          catalogue.py
+# Argument count:    1
+# Position-only argument count: 0
+# Keyword-only arguments: 0
+# Number of locals:  2
+# Stack size:        3
+# Flags:             0x00000063 (NOFREE | GENERATOR | NEWLOCALS | OPTIMIZED)
+# First Line:        25
+# Constants:
+#    0: 'section'
+#    1: '术后辅助治疗'
+#    2: 'name'
+#    3: 'TC'
+#    4: None
+# Varnames:
+#	.0, r
+# Positional arguments:
+#	.0
+# Local variables:
+#    1: r
+ 25:           0 LOAD_FAST            (.0)
+         >>    2 FOR_ITER             (to 38)
+
+ 25:           4 STORE_FAST           (r)
+
+ 25:           6 LOAD_FAST            (r)
+               8 LOAD_CONST           ("section")
+              10 BINARY_SUBSCR
+              12 LOAD_CONST           ("术后辅助治疗")
+              14 COMPARE_OP           (==)
+              16 POP_JUMP_IF_FALSE    (to 2)
+
+ 25:          18 LOAD_FAST            (r)
+              20 LOAD_CONST           ("name")
+              22 BINARY_SUBSCR
+              24 LOAD_CONST           ("TC")
+              26 COMPARE_OP           (==)
+              28 POP_JUMP_IF_FALSE    (to 2)
+
+ 25:          30 LOAD_FAST            (r)
+              32 YIELD_VALUE
+              34 POP_TOP
+              36 JUMP_ABSOLUTE        (to 2)
+         >>   38 LOAD_CONST           (None)
+              40 RETURN_VALUE
+

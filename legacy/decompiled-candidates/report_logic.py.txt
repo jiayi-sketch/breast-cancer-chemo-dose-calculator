@@ -1,0 +1,398 @@
+# decompyle3 version 3.9.3
+# Python bytecode version base 3.8.0 (3413)
+# Decompiled from: Python 3.9.6 (default, May 22 2026, 11:13:45) 
+# [Clang 21.0.0 (clang-2100.1.1.101)]
+# Embedded file name: report_logic.py
+"""Conservative, offline extraction. Inputs are untrusted clinical data, not commands.
+
+The output is a guideline catalogue match for clinician review, never a prescription.
+ISH numerical groups are deliberately not adjudicated by this parser.
+"""
+import math, re, unicodedata
+UNKNOWN = "未明确"
+CONFLICT = "结果冲突"
+POS = "阳性"
+NEG = "阴性"
+LOW = "低表达阳性"
+PHASES = ('术前新辅助治疗', '直接手术后辅助化疗', '新辅助后术后治疗')
+SURGERIES = ('乳房全切术', '改良根治术', '保乳术')
+MENOPAUSE = ('未绝经', '已绝经', '不确定（围绝经/治疗相关闭经）', '不适用')
+MARKERS = re.compile("(?P<ER>(?<![A-Za-z])ER(?![A-Za-z0-9])|雌激素受体)|(?P<PR>(?<![A-Za-z])(?:PgR|PR)(?![A-Za-z0-9])|孕激素受体)|(?P<IHC>(?<![A-Za-z])HER[ -]?2(?:/neu)?|C[ -]?erbB[ -]?2|CerbB2)|(?P<ISH>(?<![A-Za-z])(?:FISH|DISH|CISH|ISH)(?![A-Za-z])|原位杂交)|(?P<KI67>Ki[ -]?67)", re.I)
+UNCERTAIN = re.compile("待查|待定|待出|待补|等待|未检测|未行|未做|不确定|可疑|临界|界值|无法|失败|建议|若|如果|参考范围|判读标准|对照|阈值|control|pending|equivocal|indeterminate", re.I)
+NEGATIVE = re.compile("阴性|未见(?:明显)?(?:基因)?扩增|未检出(?:基因)?扩增|未发现(?:基因)?扩增|未扩增|无(?:基因)?扩增|非扩增|不扩增|不支持扩增|非阳性|not\\s+amplified|non[- ]?amplified|no\\s+amplification|amplification\\s+not\\s+detected|negative", re.I)
+POSITIVE = re.compile("阳性|扩增|amplified|positive", re.I)
+
+def normalize(text):
+    return unicodedata.normalize("NFKC", text).replace("−", "-").replace("–", "-")
+
+
+def _polarity(text):
+    text = re.sub("HER[ -]?2(?:基因)?", "", text, flags=(re.I))
+    negative = bool(NEGATIVE.search(text))
+    remainder = NEGATIVE.sub("", text)
+    positive = bool(POSITIVE.search(remainder))
+    if negative:
+        if positive:
+            return CONFLICT
+        if negative:
+            return NEG
+        if positive:
+            return POS
+        if re.fullmatch("[\\s:：()\\[\\]]*-[\\s()\\[\\].。,，]*", text):
+            return NEG
+        if re.fullmatch("[\\s:：()\\[\\]]*\\+{1,3}[\\s()\\[\\].。,，]*", text):
+            return POS
+        return UNKNOWN
+
+
+def _receptor(body, is_er):
+    if UNCERTAIN.search(body):
+        return UNKNOWN
+    if re.search("\\d\\s*(?:-|~|至|或|/)\\s*\\d", body):
+        return UNKNOWN
+    matches = re.findall("([<>≤≥]=?)?\\s*(\\d+(?:\\.\\d+)?)\\s*%", body)
+    if not matches:
+        return _polarity(body)
+    statuses = []
+    for (comparator, number) in matches:
+        value = float(number)
+        if not 0 <= value <= 100:
+            return UNKNOWN
+        else:
+            if comparator in ('<', ) and value <= 1:
+                status = NEG
+            elif comparator in ('<=', '≤') and value < 1:
+                status = NEG
+            else:
+                if comparator in ('>', '>=', '≥'):
+                    if value >= 1:
+                        if is_er:
+                            if value <= 10:
+                                return UNKNOWN
+                            status = POS
+                    if comparator:
+                        return UNKNOWN
+                if NEG if value < 1 else is_er:
+                    status = LOW if value <= 10 else POS
+            statuses.append(status)
+
+    if len(set(statuses)) != 1:
+        return CONFLICT
+    status = statuses[0]
+    explicit = _polarity(body)
+    if not explicit == CONFLICT:
+        if explicit == NEG and not status != NEG:
+            if not explicit == POS or status == NEG:
+                return CONFLICT
+        return status
+
+
+def _ihc(body):
+    if UNCERTAIN.search(body):
+        return UNKNOWN
+    scores = re.findall("(?<![\\d.])([0123])\\s*\\+(?!\\+)", body)
+    if not scores:
+        pluses = re.search("^\\s*[:(\\[]*\\s*(\\+{1,3})\\s*[)\\]]", body)
+        if pluses:
+            scores = [
+             str(len(pluses.group(1)))]
+        elif re.match("^\\s*[:(\\[]*\\s*0(?:\\s*[)\\],;。]|\\s*$)", body):
+            scores = [
+             "0"]
+        if len(set(scores)) > 1:
+            return CONFLICT
+        if scores:
+            result = scores[0] + ("+" if scores[0] != "0" else "")
+            if not (result == "3+" and NEGATIVE.search(body)):
+                if not result == "0" or _polarity(body) == POS:
+                    return CONFLICT
+                return result
+        return UNKNOWN
+
+
+def parse_reportParse error at or near `LOAD_FAST' instruction at offset 0
+
+
+def subtype_from_fields(values):
+    errors, notes = [], []
+    (er, pr, ihc, ish) = [values.get(k, UNKNOWN) for k in ('ER', 'PR', 'IHC', 'ISH')]
+    for (label, value) in (("ER", er), ("PR", pr)):
+        if value not in (POS, NEG, LOW):
+            errors.append(label + "缺失、未明确或有冲突，请核实。")
+
+    if ihc == CONFLICT or ish == CONFLICT:
+        errors.append("HER2 IHC / FISH 结果冲突，请核对同一病灶的最终报告。")
+    her2 = UNKNOWN
+    if ihc == "3+":
+        if ish == NEG:
+            errors.append("IHC 3+ 与 FISH/ISH 阴性不一致，需病理复核。")
+        else:
+            her2 = POS
+    elif ihc in ('0', '1+'):
+        if ish == POS:
+            errors.append("IHC 0/1+ 与 FISH/ISH 阳性不一致，需病理复核。")
+        else:
+            her2 = NEG
+    elif ihc == "2+" and ish in (POS, NEG):
+        her2 = ish
+    elif ihc == "2+":
+        errors.append("HER2 IHC 2+：请补充 FISH/ISH 最终结论；比值或拷贝数不能单独替代结论。")
+    else:
+        errors.append("HER2 IHC 评分未明确，请核对后补充。")
+    if errors:
+        return (None, errors, notes)
+    if er == LOW:
+        notes.append("ER 1%–10% 属低表达阳性，不能自动当作三阴性；须复核其治疗路径。")
+    if er == NEG:
+        if pr == POS:
+            notes.append("ER 阴性 / PR 阳性属于不常见组合，请确认病理已复核。")
+        if her2 == POS:
+            return ("HER2阳性", errors, notes)
+        return ("三阴性" if (er == NEG) and (pr == NEG) else "激素受体阳性", errors, notes)
+
+
+def parse_reports(sources):
+    """Keep source provenance and never silently prefer one specimen's receptors."""
+    if sum((len(text) for text in sources.values())) > 40000:
+        raise ValueError("相关报告合计最多40000字，请只保留同一患者、同一病灶的本次资料。")
+    reports = [(
+     label, parse_report(text)) for label, text in sources.items() if text.strip()]
+    if not reports:
+        raise ValueError("请先在对应输入区粘贴报告文字。")
+    merged = {}
+    for key in ('ER', 'PR', 'IHC', 'ISH', 'KI67'):
+        observed = [(
+         label, report[key]) for label, report in reports if report[key]["evidence"]]
+        known = {item["value"] for _, item in observed if item["value"] != UNKNOWN}
+        unresolved = any((item["value"] == UNKNOWN for _, item in observed))
+        value = CONFLICT if (CONFLICT in known) or (len(known) > 1) else (UNKNOWN if unresolved else next(iter(known), UNKNOWN))
+        merged[key] = {'value':value,  'evidence':["【%s】%s" % (label, evidence) for label, item in observed for evidence in iter((item["evidence"]))]}
+
+    return merged
+
+
+def suggest_stage(sources):
+    """User-defined document-presence heuristic, not a clinical indication."""
+    pre = bool(sources.get("穿刺/术前病理", "").strip())
+    post = bool(sources.get("术后大病理", "").strip())
+    ihc = bool(sources.get("免疫组化", "").strip())
+    if pre:
+        if not post:
+            return ('是', '已录入穿刺/术前病理，未录入术后大病理：预填新辅助治疗，请确认。')
+    if pre and post:
+        if ihc:
+            return ('否', '穿刺/术前病理、术后大病理及免疫组化均已录入：预填术后治疗，请确认。')
+        return ('未评估', '当前报告组合不满足自动预填条件，请手动选择治疗阶段。')
+
+
+def review_catalogue(values, context, regimens):
+    """Four-field workflow: retrieve a catalogue, never fabricate missing risk data.
+
+    The detailed matching API below is retained for its separately validated,
+    complete-context use. The simplified UI must not fill those inputs with defaults.
+    """
+    (subtype, errors, notes) = subtype_from_fields(values)
+    result = {'subtype':subtype,  'errors':errors,  'notes':notes,  'matches':[],  'references':[],  'catalogue_only':True}
+    current = context.get("current_neo")
+    if current not in ('是', '否'):
+        errors.append("请确认是否为新辅助治疗。")
+    if context.get("menopause") not in MENOPAUSE:
+        errors.append("请选择绝经状态；不明确时选择“不确定”。")
+    surgery = context.get("surgery")
+    if current == "是" and surgery != "尚未手术":
+        errors.append("当前选择新辅助治疗，但已完成术式不是“尚未手术”，请核实本次治疗阶段。")
+    elif current == "否":
+        if surgery not in SURGERIES:
+            errors.append("术后治疗请确认已完成的乳腺肿瘤术式；其他或未知术式需人工复核。")
+    if context.get("nodes") not in ('有转移', '无转移'):
+        errors.append("请确认淋巴结有无转移；微转移或不确定情况先由医生复核。")
+    if context.get("ish_unresolved"):
+        errors.append("FISH/ISH报告仍有待出或未明确内容，请更新最终报告后重试。")
+    notes.append("仅按阶段和受体分型检索方案目录，未完成个体化治疗指征或风险分层；淋巴结、绝经及术式为核对信息，不单独决定方案或剂量。")
+    notes.append("未录入肿瘤大小、远处转移评估、器官功能、禁忌证及完整既往治疗等信息，不等于这些项目正常或低风险。")
+    if current == "否":
+        notes.append("术后报告的存在不说明此前未做新辅助。若已接受新辅助，不得直接重复整套初始辅助化疗；需结合既往疗程及残留病灶核对衔接治疗。")
+        result["references"].append("术后衔接参考：HER2阳性见PDF54，三阴性见PDF62，HR阳性见PDF83–91；本简化页不自动确定该分支个体化剂量。")
+    if surgery == "保乳术":
+        notes.append("保乳术后局部治疗请另查左侧“保乳术后治疗”。")
+    if errors:
+        return result
+    section = "术前新辅助治疗" if current == "是" else "术后辅助治疗"
+    for regimen in regimens:
+        if not regimen["section"] == section:
+            if regimen["subtype"] == subtype:
+                result["matches"].append({'regimen':regimen,  'level':"目录参考 · 未作个体化分层",  'reason':"仅阶段/分型与目录一致，不代表适用于该患者。原指南适用条件及层级请核对方案详情；由医生选定后计算。"})
+            return result
+
+
+def her2_guidanceParse error at or near `LOAD_FAST' instruction at offset 0
+
+
+def clinical_context_checks(values, context):
+    errors, notes = [], []
+    phase = context.get("phase")
+    if context.get("menopause") not in MENOPAUSE:
+        errors.append("请选择绝经状态；不能确定时选“不确定”，不能将化疗后闭经直接当作绝经。")
+    if context.get("menopause") == MENOPAUSE[2]:
+        notes.append("绝经状态不确定：内分泌路径需进一步评估，本次化疗目录不据此推断卵巢功能。")
+    if phase == PHASES[0]:
+        if context.get("current_neo") != "是":
+            errors.append("术前新辅助阶段与“目前是否为新辅助治疗”不一致。")
+        if context.get("surgery") != "尚未手术":
+            errors.append("术前新辅助须确认尚未实施本次乳腺肿瘤手术；计划术式不填写为已完成术式。")
+        if context.get("reconstruction") in ('已行即刻再造', '已行延期再造'):
+            errors.append("尚未手术与已行乳房再造不一致，请核实同侧本次治疗。")
+    elif phase in PHASES[1:]:
+        if context.get("current_neo") != "否":
+            errors.append("当前术后阶段应选择“目前是否为新辅助治疗：否”。")
+        expected = "是" if phase == PHASES[2] else "否"
+        if context.get("prior_neo") != expected:
+            errors.append("既往新辅助治疗情况与所选术后分支不一致或未核实。")
+        if context.get("surgery") not in SURGERIES:
+            errors.append("请选择已完成的乳腺肿瘤术式；乳房再造单独记录，不能替代原切除术式，其他术式需人工复核。")
+        if context.get("reconstruction") not in ('未行再造', '已行即刻再造', '已行延期再造', '计划再造'):
+            errors.append("请记录乳房再造情况。")
+    epoch = context.get("specimen_epoch")
+    if epoch not in ('新辅助前/未接受新辅助', '新辅助后'):
+        errors.append("请核实本次免疫组化/FISH受体报告的取材时点。")
+    elif phase in PHASES[:2]:
+        if epoch != "新辅助前/未接受新辅助":
+            errors.append("本分支不能用新辅助后的残留标本直接替代治疗前受体报告。")
+    if phase == PHASES[2]:
+        notes.append("新辅助后请对照治疗前与术后受体报告；两次结果变化不由软件自动裁决。")
+    status = context.get("ish_status")
+    if status not in ('未做', '已完成'):
+        errors.append("请核实HER2 FISH/ISH检查状态；已送检待结果或无法判定者先完成病理复核。")
+    if values.get("ISH") in (POS, NEG, CONFLICT):
+        if status != "已完成":
+            errors.append("已有FISH/ISH判读结果，检查状态不能填“未做”；请核对原始报告。")
+        if context.get("ish_report_present"):
+            if status == "未做":
+                errors.append("原文存在FISH/ISH检测内容，不能用“未做”忽略待出或待判读结果；请核实并更新报告。")
+            if values.get("IHC") == "2+":
+                if status != "已完成":
+                    errors.append("IHC 2+必须补充已完成的FISH/ISH最终结论，不能跳过。")
+                if status == "已完成":
+                    if values.get("ISH") not in (POS, NEG):
+                        errors.append("FISH/ISH标记为已完成，但缺少明确且一致的最终结论。")
+            notes.append(her2_guidance(values.get("IHC"), values.get("ISH")))
+            if context.get("surgery") == "保乳术":
+                notes.append("已记录保乳术；另请进入“保乳术后治疗”核对局部治疗。术式本身不单独决定化疗方案或剂量。")
+        return (
+         errors, notes)
+
+
+def match_regimens(values, context, regimens):
+    (subtype, errors, notes) = subtype_from_fields(values)
+    result = {'subtype':subtype,  'errors':errors,  'notes':notes,  'matches':[],  'references':[]}
+    if not context.get("reviewed"):
+        errors.append("请确认识别结果属于同一患者、同一病灶，并已逐项核对。")
+    if context.get("invasive") != "已确认浸润性乳腺癌":
+        errors.append("请确认浸润性乳腺癌；原位癌或诊断未明确不进入本匹配流程。")
+    if context.get("m") != "M0（已评估）":
+        errors.append("请完成远处转移评估；M1或未知不进入围手术期匹配。")
+    if not context.get("indication"):
+        errors.append("请由医生确认该阶段的全身治疗指征、耐受性及禁忌证已评估。")
+    if notes:
+        if not context.get("special_review"):
+            errors.append("低表达 / 不常见受体组合需完成专项复核后匹配。")
+        phase = context.get("phase")
+        if phase not in PHASES:
+            errors.append("请选择治疗阶段。")
+        (context_errors, context_notes) = clinical_context_checks(values, context)
+        errors.extend(context_errors)
+        notes.extend(context_notes)
+        if errors:
+            return result
+        section = "术前新辅助治疗" if phase == PHASES[0] else "术后辅助治疗"
+        pool = [r for r in regimens if r["section"] == section if r["subtype"] == subtype]
+
+        def add(names, level=None, reason='按分型与治疗阶段匹配；仍需核对方案适用条件'):
+            for r in pool:
+                if not names is None:
+                    if r["name"] in names:
+                        pass
+                result["matches"].append({'regimen':r,  'level':level or r["level"],  'reason':reason})
+
+        if phase == PHASES[2]:
+            if context.get("response") not in ('pCR', '有浸润性残留') or not context.get("prior", "").strip():
+                errors.append("新辅助后术后治疗需填写既往方案及 pCR / 浸润性残留状态。")
+                return result
+            result["references"].append("新辅助后不得直接重复整套初始辅助化疗。此版本提供衔接核对，尚不自动计算该分支剂量。")
+            if subtype == "HER2阳性":
+                result["references"].append("PDF 54：足疗程后 pCR 可继续原靶向；非 pCR 涉及 HP / T-DM1 等选择，需核实术前靶向用药、疗程与术后适应证。")
+            elif subtype == "三阴性":
+                result["references"].append("PDF 62：结合术前是否使用 PD-1、足疗程与否、pCR 及 BRCA 状态，核对继续免疫、卡培他滨或奥拉帕利路径。不能一律追加化疗。")
+            else:
+                result["references"].append("HR阳性：结合既往化疗、残留病灶、绝经状态及复发风险评估内分泌/强化路径（PDF 83–91）。")
+            return result
+        if context.get("nodes") not in ('阴性', '阳性'):
+            errors.append("请核实区域淋巴结状态；微转移等特殊情况需人工分层。")
+        try:
+            size = float(context.get("size", ""))
+            if math.isfinite(size) and 0 < size <= 50:
+                raise ValueError()
+        except (TypeError, ValueError):
+            errors.append("请填写当前阶段评估的肿瘤最大径（cm，0–50）。")
+            size = 0
+        else:
+            if errors:
+                return result
+            else:
+                if phase == PHASES[0]:
+                    if subtype == "三阴性":
+                        immuno = context.get("immuno", "未评估")
+                        if immuno == "未评估":
+                            errors.append("三阴性新辅助：请评估免疫治疗禁忌证及可及性。")
+                        elif immuno == "可用且已评估":
+                            add({"帕博利珠单抗 + TP → AC"}, "I级路径 [1A]（PDF 55）", "三阴性；医生已确认适合新辅助且可接受免疫治疗")
+                            notes.append("此版仅列已录入完整剂量的免疫联合方案，非完整药物清单。")
+                        else:
+                            add({r["name"] for r in pool if "单抗" not in r["name"]}, reason="免疫治疗禁忌或不可及；化疗路径见 PDF 55–60")
+                    else:
+                        add(None)
+                    if subtype == "激素受体阳性":
+                        notes.append("本分支为已确认化疗指征者的方案目录，不代表所有 HR阳性患者都需要化疗；需结合绝经状态等评估内分泌选择。")
+                    return result
+                positive_nodes = context["nodes"] == "阳性"
+            if subtype == "HER2阳性":
+                doublet = {
+                 "AC → THP（紫杉醇）", "AC → THP（多西他赛）", "TCbHP"}
+                single = {"AC → TH（紫杉醇周疗）", "AC → TH（多西他赛）", "TCbH"}
+                if positive_nodes:
+                    add(doublet, "I级 [1A]", "腋窝淋巴结阳性；PDF 68")
+                    add(single, "III级 [2B]", "腋窝淋巴结阳性；PDF 68")
+                else:
+                    if size > 2:
+                        if not not values["ER"] == NEG:
+                            if not context.get("ki_high") == "是" or context.get("other_risk") == "是":
+                                add(single, "I级 [2A]", "淋巴结阴性、肿瘤 >2cm 且医生确认存在危险因素；PDF 68")
+                                add(doublet, "II级 [2A]", "淋巴结阴性、肿瘤 >2cm 且存在危险因素；PDF 68")
+                                notes.append("当前列表为已核实剂量的方案，非完整治疗选择清单。")
+                    if size > 2:
+                        if not context.get("ki_high") not in ('否', '是') or context.get("other_risk") not in ('否',
+                                                                                                             '是'):
+                            errors.append("请由医生确认 Ki-67 高表达及其他危险因素；未评估不等于无危险因素。")
+                        add({"TH（紫杉醇周疗）", "TC + H"}, "I级 [2A]", "淋巴结阴性、低风险分层；PDF 68、70")
+                    if not result["matches"]:
+                        result["references"].append("PDF 68、70：此分层 I级为 TH 或 TC+H。指定页中未核实完整剂量，暂不跳转到更强化的 AC-THP / TCbHP。")
+            elif subtype == "三阴性":
+                if positive_nodes or size > 2:
+                    add({"AC → TP", "密集AC → 密集T"}, "I级 [1A]", "淋巴结阳性或肿瘤 >2cm；PDF 75")
+                    add({"AC → T（多西他赛）", "AC → T（紫杉醇周疗）", "TP"}, "II级 [1A/2A]", "淋巴结阳性或肿瘤 >2cm；PDF 75")
+                else:
+                    add({"AC", "TC（4周期）"}, "I级 [1A]", "肿瘤 ≤2cm 且淋巴结阴性；需先确认化疗指征；PDF 75")
+                    add({"AC → T（多西他赛）", "AC → T（紫杉醇周疗）", "TC（6周期）"}, "II级 [2A]", "较低复发风险分层；PDF 75")
+            else:
+                risk = context.get("hr_risk")
+                if risk == "高复发风险（按83页）":
+                    add({"AC → T（多西他赛）", "AC → T（紫杉醇周疗）"}, "I级 [1A]", "医生按 PDF 83 确认高复发风险")
+                    add({"密集AC → 密集T"}, "I级 [2A]", "医生按 PDF 83 确认高复发风险")
+                    add({"TC（6周期）", "TAC"}, "II级 [2A]", "医生按 PDF 83 确认高复发风险")
+                elif risk == "符合其他化疗分层（83页）":
+                    add({"AC", "TC（4周期）"}, "I级 [1A]", "医生已综合淋巴结、大小、年龄等按 PDF 83 确认化疗分层")
+                    add({"AC → T（多西他赛）", "AC → T（紫杉醇周疗）", "TC（6周期）"}, "II级 [2A]", "医生按 PDF 83 确认化疗分层")
+                else:
+                    errors.append("HR阳性/HER2阴性：请结合淋巴结数量、其他风险、年龄/绝经状态及必要时多基因检测，确认 PDF83–84 的化疗分层。")
+                notes.append("Ki-67 不单独决定化疗。低风险或化疗获益未明确者，应先评估内分泌治疗/多基因检测；见 PDF 67、83–84。")
+        return result
