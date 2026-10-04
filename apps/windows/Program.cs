@@ -198,8 +198,8 @@ internal sealed class DoseWindow : Form
               const result=JSON.parse(document.getElementById('raw-result').textContent);
               const first=document.querySelector('.drug-value').textContent;
               document.getElementById('copy').click();
-              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.includes('AC→TP（白蛋白紫杉醇+卡铂）'));
-              if (long) long.click();
+              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP（白蛋白紫杉醇+卡铂）'));
+              if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
               const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
               const fits=!!active && [...active.children].every(c=>{const r=c.getBoundingClientRect();return r.top>=bounds.top && r.bottom<=bounds.bottom+1;});
               const cleared=document.getElementById('raw-result').textContent==='';
@@ -221,7 +221,7 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
-        FinishTest(passed, result);
+        FinishTest(passed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed }));
     }
 
     private void FinishTest(bool passed, string detail)
