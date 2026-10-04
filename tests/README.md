@@ -8,7 +8,8 @@
 | 26 项 DOM 事件测试 | 11 项方案库交互及 15 项自定义单药界面测试，新增 Windows 复制回执、失败提示与旧结果失效检查 |
 | TypeScript 5.9.3 | --noEmit --strict --target ES2020 --module ESNext |
 | Android 包检查 | 编译、zipalign、apksigner；沿用旧版证书，versionCode 5；检查包内全部网页与源码一致 |
-| Mac 包检查 | arm64 编译、ad-hoc 签名、DMG 校验；抽取包内资源与源码比对 |
+| Mac 包检查 | arm64 编译、ad-hoc 签名、DMG 校验；抽取包内资源与源码比对；原生隔离预览检查版本、声明、计算和长名称切换 |
+| Windows 实际运行 | GitHub Windows runner 构建并执行共享界面、合成数据计算、剪贴板回执、长名称边框及旧结果清除自检 |
 
 复现命令：
 
@@ -25,7 +26,13 @@ Happy DOM 20.8.4 仅执行本项目代码，禁用外部资源加载。环境变
 
 ## Windows 1.0.1
 
-Mac 上交叉编译成功，.NET 自包含 win-x64 EXE，已内嵌共享网页、项目授权与第三方许可，未做 Authenticode 签名。Windows 实际运行验证正在通过 GitHub Windows runner 完成，结果将在发布前更新。
+Mac 上交叉编译与 GitHub Windows runner 构建成功，.NET 自包含 win-x64 EXE 内嵌共享网页、项目授权与第三方许可，未做 Authenticode 签名。发布的 Windows EXE 来自已通过运行自检的 Windows CI 构建。
+
+[Windows 运行验证 #3](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37189399285) 在提交 f19ec9c85f6c562f3e217879546e38474295bc04 上通过：1.0.1 界面/核心版本、52 个方案、TCbHP 四行结果、150.00 mg 首行计算、原生剪贴板写入及读取比对、长名称条目边框、切换后旧计算清除、两行声明。实际执行为 GitHub Windows runner，不等于所有 Windows 设备验收。首轮自检漏掉方案名称里的空格，已修正测试匹配后重跑通过；再固定 Git 换行属性，确保 Windows 构建内嵌网页和许可与源码逐字节一致。
+
+## Mac 1.0.1 原生界面检查
+
+从最终 DMG 提取同一应用，建立仅更改应用标识/名称的隔离预览，实际检查首页、版本与依据中的 1.0.1 和完整两行声明。合成输入 180 cm、80 kg、肾功能 50 mL/min，TCbHP 显示 BSA 2.000、多西他赛 150.00 mg、卡铂 450.00 mg、曲妥珠单抗首剂/后续 640.00/480.00 mg、帕妥珠单抗 840.00/420.00 mg。切换长名称 AC → TP（白蛋白紫杉醇+卡铂）后边框围住标题和说明，右侧方案对应，旧结果清除且复制禁用。数值仅为测试，不对应患者。
 
 ## 验证的关键行为
 
@@ -45,7 +52,7 @@ Mac 上交叉编译成功，.NET 自包含 win-x64 EXE，已内嵌共享网页�
 - Apple Developer ID、公证和应用商店分发。
 - 独立临床验证、患者适用性、报告智能匹配、全书方案覆盖。
 
-Mac 源码包含 --self-test 入口，供具备桌面运行条件时使用，本次未执行。指南的扫描页录入核对另见 docs/guideline-review.md。
+Mac 源码包含 --self-test 入口；本次从 shell 启动该入口时因桌面运行上下文中止，未将其记为通过。上述检查通过原生界面工具实际操作完成。指南的扫描页录入核对另见 docs/guideline-review.md。
 
 ## 0.2.2 声明修改检查
 
