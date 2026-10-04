@@ -30,12 +30,46 @@ internal sealed class DoseWindow : Form
     private readonly string? testReport;
     private readonly System.Windows.Forms.Timer testTimeout = new() { Interval = 60000 };
     private CoreWebView2Environment? environment;
+    private string language = "zh-Hans";
+    private readonly string preferencePath;
     private bool finishedTest;
+    private static bool SupportedLanguage(string? value) => value is "zh-Hans" or "zh-Hant" or "en";
+    private string Localized(string source) {
+        var translations = new Dictionary<string, (string Traditional, string English)> {
+            ["帮助"]=("幫助","Help"), ["关于乳腺癌剂量计算"]=("關於乳腺癌劑量計算","About Breast Cancer Dose Calculator"),
+            ["查看授权"]=("查看授權","View licence"), ["第三方许可"]=("第三方許可","Third-party licences"), ["退出"]=("退出","Exit"),
+            ["关于"]=("關於","About"), ["非商业学术授权"]=("非商業學術授權","Noncommercial academic licence"),
+            ["第三方运行时与库许可"]=("第三方執行階段與程式庫許可","Third-party runtime and library licences"),
+            ["乳腺癌剂量计算"]=("乳腺癌劑量計算","Breast Cancer Dose Calculator"), ["内置方案版"]=("內置方案版","Built-in catalogue version")
+        };
+        return translations.TryGetValue(source,out var pair) ? language == "en" ? pair.English : language == "zh-Hant" ? pair.Traditional : source : source;
+    }
+    private void RefreshLanguage() {
+        Text = $"{Localized("乳腺癌剂量计算")} · {Localized("内置方案版")} {Version}";
+        if (MainMenuStrip?.Items[0] is ToolStripMenuItem help) {
+            help.Text = Localized("帮助");
+            foreach (ToolStripItem item in help.DropDownItems) item.Text = Localized((string)item.Tag!);
+        }
+    }
+    private void ShowAbout() {
+        string detail = language == "en"
+            ? $"Breast Cancer Dose Calculator {Version}\n\nFor academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\n\n52 regimens, 7 single-drug references and 18 guideline summary cards.\nShared interface, catalogue and calculation core on Mac, Android and Windows.\nNot independently clinically validated; professional verification required."
+            : $"{Localized("乳腺癌剂量计算")} {Version}\n\n{(language == "zh-Hant" ? "僅限於學術交流，嚴禁商業用途\n版權所有 GitHub @jiayi-sketch\n\n52 個內置方案、7 個單藥參考、18 張指南摘要卡。\n與 Mac、安卓使用相同介面、方案庫和計算核心。\n未經獨立臨床驗證，結果須專業覆核。" : Notice + "\n\n52 个内置方案、7 个单药参考、18 张指南摘要卡。\n与 Mac、安卓使用相同界面、方案库和计算核心。\n未经独立临床验证，结果须专业复核。")}";
+        MessageBox.Show(this,detail,Localized("关于"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+    }
     private readonly TaskCompletionSource<bool> clipboardChecked = new();
 
     internal DoseWindow(string[] args)
     {
         testing = args.Contains("--self-test");
+        preferencePath = testing ? Path.Combine(profilePath,"language.json") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ChemoDose","language.json");
+        try {
+            if (File.Exists(preferencePath) && new FileInfo(preferencePath).Length <= 128) {
+                using var preference = JsonDocument.Parse(File.ReadAllText(preferencePath));
+                string? saved = preference.RootElement.GetProperty("language").GetString();
+                if (SupportedLanguage(saved)) language = saved!;
+            }
+        } catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or KeyNotFoundException or InvalidOperationException) { }
         int reportIndex = Array.IndexOf(args, "--test-report");
         testReport = reportIndex >= 0 && reportIndex + 1 < args.Length ? args[reportIndex + 1] : null;
         Text = $"乳腺癌剂量计算 · 内置方案版 {Version}";
@@ -45,14 +79,15 @@ internal sealed class DoseWindow : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         var menu = new MenuStrip();
         var help = new ToolStripMenuItem("帮助");
-        help.DropDownItems.Add("关于乳腺癌剂量计算", null, (_, _) =>
-            MessageBox.Show(this, $"乳腺癌剂量计算 {Version}\n\n{Notice}\n\n52 个内置方案、7 个单药参考、18 张指南摘要卡。\n与 Mac、安卓使用相同界面、方案库和计算核心。\n未经独立临床验证，结果须专业复核。", "关于", MessageBoxButtons.OK, MessageBoxIcon.Information));
+        help.DropDownItems.Add("关于乳腺癌剂量计算", null, (_, _) => ShowAbout());
         help.DropDownItems.Add("查看授权", null, (_, _) =>
-            MessageBox.Show(this, ReadResource("LICENSE.txt"), "非商业学术授权", MessageBoxButtons.OK, MessageBoxIcon.Information));
+            MessageBox.Show(this, ReadResource("LICENSE.txt"), Localized("非商业学术授权"), MessageBoxButtons.OK, MessageBoxIcon.Information));
         help.DropDownItems.Add("第三方许可", null, (_, _) => ShowThirdPartyLicenses());
         help.DropDownItems.Add("退出", null, (_, _) => Close());
+        foreach (ToolStripItem item in help.DropDownItems) item.Tag = item.Text;
         menu.Items.Add(help);
         MainMenuStrip = menu;
+        RefreshLanguage();
         Controls.Add(web);
         Controls.Add(menu);
         foreach (string name in AppAssembly.GetManifestResourceNames().Where(n => n.StartsWith("web/", StringComparison.Ordinal)))
@@ -80,7 +115,7 @@ internal sealed class DoseWindow : Form
 
     private void ShowThirdPartyLicenses()
     {
-        using var dialog = new Form { Text = "第三方运行时与库许可", Size = new Size(780, 600), StartPosition = FormStartPosition.CenterParent };
+        using var dialog = new Form { Text = Localized("第三方运行时与库许可"), Size = new Size(780, 600), StartPosition = FormStartPosition.CenterParent };
         string content = string.Join("\r\n\r\n", AppAssembly.GetManifestResourceNames()
             .Where(n => n.StartsWith("licenses/", StringComparison.Ordinal)).Order()
             .Select(n => n + "\r\n\r\n" + ReadResource(n).ReplaceLineEndings("\r\n")));
@@ -131,7 +166,7 @@ internal sealed class DoseWindow : Form
                 try { await RunSelfTest(); }
                 catch (Exception error) { FinishTest(false, error.Message); }
             };
-            core.Navigate(Origin + "/index.html");
+            core.Navigate(Origin + "/index.html?lang=" + language);
         }
         catch (Exception error)
         {
@@ -166,6 +201,16 @@ internal sealed class DoseWindow : Form
         {
             using JsonDocument message = JsonDocument.Parse(e.WebMessageAsJson);
             JsonElement root = message.RootElement;
+            if (root.GetProperty("type").GetString() == "languagePreference") {
+                string? saved = root.GetProperty("language").GetString();
+                if (!SupportedLanguage(saved)) return;
+                language = saved!;
+                try {
+                    Directory.CreateDirectory(Path.GetDirectoryName(preferencePath)!);
+                    File.WriteAllText(preferencePath,JsonSerializer.Serialize(new {language}),Encoding.UTF8);
+                } catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* UI still changes for this session. */ }
+                RefreshLanguage(); return;
+            }
             if (root.GetProperty("type").GetString() != "copySummary") return;
             requestId = root.GetProperty("requestId").GetString();
             if (requestId is null || requestId.Length > 100) return;
@@ -198,14 +243,29 @@ internal sealed class DoseWindow : Form
               const result=JSON.parse(document.getElementById('raw-result').textContent);
               const first=document.querySelector('.drug-value').textContent;
               document.getElementById('copy').click();
-              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP（白蛋白紫杉醇+卡铂）'));
+              const languages=[];
+              for (const code of ['zh-Hant','en','zh-Hans']) {
+                const chooser=document.getElementById('language');chooser.value=code;chooser.dispatchEvent(new Event('change',{bubbles:true}));
+                const cleared=document.getElementById('raw-result').textContent==='';
+                const retained=document.getElementById('height').value==='180' && document.getElementById('reviewer').value==='合成测试';
+                const reset=!document.getElementById('confirmed').checked && !document.getElementById('renal-confirmed').checked;
+                document.getElementById('renal-confirmed').checked=true;
+                document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
+                const rows=JSON.parse(document.getElementById('raw-result').textContent).rows;
+                const values=rows.flatMap(r=>r.result.quantities.map(q=>q.valueMg));
+                const header=document.querySelector('h1').textContent;
+                languages.push({language:code,cleared,retained,reset,values,header,passed:cleared && retained && reset && JSON.stringify(values)==='[150,450,640,480,840,420]' && document.documentElement.lang===code && (code!=='en'||header==='Breast Cancer Dose Calculator')});
+              }
+              const chooser=document.getElementById('language');chooser.value='en';chooser.dispatchEvent(new Event('change',{bubbles:true}));
+              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP(Nab-paclitaxel+Carboplatin)'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
               const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
               const fits=!!active && [...active.children].every(c=>{const r=c.getBoundingClientRect();return r.top>=bounds.top && r.bottom<=bounds.bottom+1;});
               const cleared=document.getElementById('raw-result').textContent==='';
               return {ready:window.ChemoAppReady,version:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
+                languages,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
                 count:window.ChemoCatalogue.regimens.filter(r=>r.entryType==='regimen').length,rows:result.rows.length,first,longName:!!long,fits,cleared,
-                notice:document.body.textContent.includes('仅限于学术交流，严禁商业用途') && document.body.textContent.includes('版权所有 GitHub @jiayi-sketch')};
+                notice:document.body.textContent.includes('For academic exchange only. Commercial use is prohibited.') && document.body.textContent.includes('Copyright GitHub @jiayi-sketch')};
             })()
             """);
         using JsonDocument doc = JsonDocument.Parse(result);
@@ -220,8 +280,11 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("engine").GetString() == Version && r.GetProperty("count").GetInt32() == 52
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
+            && r.GetProperty("languages").EnumerateArray().All(item=>item.GetProperty("passed").GetBoolean())
+            && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
-        FinishTest(passed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed }));
+        bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
+        FinishTest(passed && languagePreferencePassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, languagePreferencePassed }));
     }
 
     private void FinishTest(bool passed, string detail)
