@@ -21,3 +21,7 @@ writeFileSync(new URL('apps/shared-web/catalogue-engine.browser.js', root),
   '/* Generated from catalogue.mjs. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.RegimenEngine = (function(){\n"use strict";\n' +
   'const {calculateDose} = window.DoseCore;\n' + engine +
   '\nreturn {filterEntries, sourceLabel, standardDose, quantityLabel, calculateRegimen, summaryText};\n})();\n');
+
+const translations = JSON.parse(readFileSync(new URL('data/i18n.json', root), 'utf8'));
+writeFileSync(new URL('apps/shared-web/translations.browser.js', root),
+  '/* Generated from data/i18n.json. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ChemoTranslations = ' + JSON.stringify(translations) + ';\n');

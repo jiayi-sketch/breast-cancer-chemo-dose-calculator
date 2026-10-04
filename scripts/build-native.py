@@ -24,7 +24,7 @@ def run(*args):
 def copy_web(target):
     target.mkdir(parents=True, exist_ok=True)
     for name in ('index.html', 'catalogue.css', 'catalogue-ui.js', 'catalogue.browser.js',
-                 'catalogue-engine.browser.js', 'manual.html', 'styles.css', 'app.js', 'core.browser.js'):
+                 'catalogue-engine.browser.js', 'translations.browser.js', 'i18n.js', 'manual.html', 'styles.css', 'app.js', 'core.browser.js'):
         shutil.copyfile(ROOT / 'apps/shared-web' / name, target / name)
 
 def macos(args):
@@ -51,7 +51,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '5',
+        'CFBundleVersion': '6',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
