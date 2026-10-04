@@ -25,10 +25,11 @@ Breast Cancer Chemotherapy Dose Calculator · **0.2.2 内置方案测试版** ·
 | --- | --- | --- |
 | ChemoDose-0.2.2-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 4 |
 | ChemoDose-0.2.2-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
+| ChemoDose-v3.0.2-windows-academic.exe | Windows，保留原 v3.0.2 方案库 | 原 EXE 的声明修订副本；仅静态核验，未在 Windows 运行测试 |
 
 安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **0.2.2 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
 
-安装包为本地交付，尚未上传 GitHub。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
+安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v0.2.2-preview)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
 
 ## 数据与验证
 
