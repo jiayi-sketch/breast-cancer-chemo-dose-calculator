@@ -36,7 +36,8 @@
   let node;
   while ((node = walker.nextNode())) {
     if (node.parentElement?.closest('script,style,pre,textarea,#language,[data-no-translate]')) continue;
-    if (node.nodeValue.trim()) records.push({node,source:node.nodeValue});
+    // Units, version badges and live numeric fields are not translation sources.
+    if (/[\u3400-\u9fff]/u.test(node.nodeValue)) records.push({node,source:node.nodeValue});
   }
   const attributes = [];
   document.querySelectorAll('[placeholder],[aria-label],[title]').forEach(element => {
