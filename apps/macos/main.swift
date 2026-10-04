@@ -9,7 +9,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未知"
     let testing = CommandLine.arguments.contains("--self-test")
 
+    var language = "zh-Hans"
+    let supportedLanguages = ["zh-Hans", "zh-Hant", "en"]
+    func localized(_ source: String) -> String {
+        if language == "zh-Hant" { return source.applyingTransform(StringTransform("Simplified-Traditional"), reverse: false) ?? source }
+        if language != "en" { return source }
+        return ["关于乳腺癌剂量计算":"About Breast Cancer Dose Calculator", "退出乳腺癌剂量计算":"Quit Breast Cancer Dose Calculator", "编辑":"Edit", "撤销":"Undo", "剪切":"Cut", "复制":"Copy", "粘贴":"Paste", "全选":"Select All", "乳腺癌剂量计算":"Breast Cancer Dose Calculator", "内置方案版":"Built-in catalogue version"][source] ?? source
+    }
+    func refreshLanguage() {
+        window.title = localized("乳腺癌剂量计算") + " · " + localized("内置方案版") + " " + appVersion
+        if let menu = NSApp.mainMenu {
+            menu.items[0].submenu?.items[0].title = localized("关于乳腺癌剂量计算")
+            menu.items[0].submenu?.items[2].title = localized("退出乳腺癌剂量计算")
+            menu.items[1].title = localized("编辑")
+            for (index,title) in ["撤销","剪切","复制","粘贴","全选"].enumerated() { menu.items[1].submenu?.items[index].title = localized(title) }
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let saved = UserDefaults.standard.string(forKey: "interfaceLanguage"), supportedLanguages.contains(saved) { language = saved }
         let mainMenu = NSMenu()
         let appMenuItem = NSMenuItem()
         mainMenu.addItem(appMenuItem)
@@ -29,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.websiteDataStore = .nonPersistent()
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
         config.userContentController.add(self, name: "copySummary")
+        config.userContentController.add(self, name: "languagePreference")
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = false
@@ -40,14 +59,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.center()
         guard let resources = Bundle.main.resourceURL else { fatalError("Missing bundled resources") }
         webRoot = resources.appendingPathComponent("web", isDirectory: true)
-        webView.loadFileURL(webRoot.appendingPathComponent("index.html"), allowingReadAccessTo: webRoot)
+        refreshLanguage()
+        var page = URLComponents(url: webRoot.appendingPathComponent("index.html"), resolvingAgainstBaseURL: false)!
+        page.queryItems = [URLQueryItem(name: "lang", value: language)]
+        webView.loadFileURL(page.url!, allowingReadAccessTo: webRoot)
         if !testing { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     }
 
     @objc func showAbout() {
         let alert = NSAlert()
-        alert.messageText = "乳腺癌剂量计算 \(appVersion)"
+        alert.messageText = localized("乳腺癌剂量计算") + " " + appVersion
         alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n输入仅保存在本次窗口内存中；未接入报告自动匹配。"
+        if language == "en" {
+            alert.informativeText = "For academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\nApple Silicon preview\n52 regimens, 7 single-drug dose references and 18 guideline summary cards.\nTranscribed from the supplied 2026 CSCO guideline; not independently clinically validated.\nInputs remain in window memory only. Automatic report matching is not implemented."
+        } else if language == "zh-Hant" {
+            alert.informativeText = localized(alert.informativeText)
+        }
+        alert.addButton(withTitle: language == "en" ? "OK" : "好")
         alert.runModal()
     }
 
@@ -59,7 +87,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "copySummary", message.frameInfo.isMainFrame,
+        guard message.frameInfo.isMainFrame else { return }
+        if message.name == "languagePreference", let value = message.body as? String, supportedLanguages.contains(value) {
+            language = value
+            UserDefaults.standard.set(value, forKey: "interfaceLanguage")
+            refreshLanguage()
+            return
+        }
+        guard message.name == "copySummary",
               let value = message.body as? String, value.count < 30000 else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(value, forType: .string)
