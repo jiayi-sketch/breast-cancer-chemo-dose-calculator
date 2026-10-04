@@ -63,7 +63,7 @@ export function summaryText(catalogue, calculation) {
   if (calculation?.status !== 'ok') return '';
   const r = catalogue.regimens.find(r => r.id === calculation.regimenId);
   const input = calculation.inputs;
-  return ['乳腺癌剂量计算 · 1.0.1 · 算术核对单（非处方）', r.section + ' / ' + r.subtype,
+  return ['乳腺癌剂量计算 · 1.0.2 · 算术核对单（非处方）', r.section + ' / ' + r.subtype,
     r.name, catalogue.source.title + ' · ' + sourceLabel(r), '目录版本：' + calculation.catalogueVersion,
     '本次核对人：' + calculation.reviewer, '计算时间：' + calculation.calculatedAt,
     '身高：' + (input.heightCm ?? '未填写') + ' cm；体重：' + (input.weightKg ?? '未填写') + ' kg',
