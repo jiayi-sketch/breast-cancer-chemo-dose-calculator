@@ -28,7 +28,7 @@ Happy DOM 20.8.4 仅执行本项目代码，禁用外部资源加载。环境变
 
 157 项核心/目录/DOM 测试及 TypeScript 严格检查通过。全部显示用目录字段具备英文翻译。三种语言的合成 TCbHP 结果均为 150、450、640/480、840/420 mg；8类人工计算方式数值一致。语言切换清除旧结果和确认、保留输入及备选频次；手工姓名、来源和频次原文不翻译，延迟复制回执不覆盖新状态。页面导航携带语言，原生仅保存白名单中的语言值。
 
-APK 与最终 DMG 的全部 11 个共享网页文件及项目许可逐字节匹配源码。Android versionCode 6，保持原签名证书；Mac arm64 构建、ad-hoc 签名及 DMG 校验通过。1.0.2 Mac 原生窗口读取超时，本地浏览器连接超时，均未计为视觉通过。Android 尚未真机测试。[Windows 1.0.2 运行验证 #4](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37205425836) 在提交 42f6751cdc11f3793b686df1b4d51a20e09187be 上通过。简繁英三种语言下四行数值一致，切换清除结果和确认、保留输入，语言偏好成功保存为 en；复制、英文长名称边框、语言选择器位置及英文声明均通过。发布 EXE 为该次 Windows runner 的产物。
+APK 与最终 DMG 的全部 11 个共享网页文件及项目许可逐字节匹配源码。Android versionCode 6，保持原签名证书；Mac arm64 构建、ad-hoc 签名及 DMG 校验通过。1.0.2 Mac 原生窗口读取超时，本地浏览器连接超时，均未计为视觉通过。Android 尚未真机测试。[Windows 1.0.2 运行验证 #5](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37206346905) 在提交 56f14a8aebf4b239c5779949b6fa8c9a716af48e 上通过。简繁英三种语言下四行数值一致，切换清除结果和确认、保留输入及 BSA 预览，语言偏好成功保存为 en；复制、英文长名称边框、语言选择器位置及英文声明均通过。发布 EXE 为该次 Windows runner 的产物。
 
 ## Windows 1.0.1
 
