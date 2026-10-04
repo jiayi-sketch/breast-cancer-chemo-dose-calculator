@@ -1,0 +1,43 @@
+name: Windows runtime verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.401'
+      - name: Build self-contained Windows application
+        shell: pwsh
+        run: |
+          dotnet publish apps/windows/ChemoDose.Windows.csproj -c Release -r win-x64 --self-contained true -o build/windows -p:ContinuousIntegrationBuild=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify embedded WebView2 application and clipboard
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/verification | Out-Null
+          $report = Join-Path $PWD 'build/verification/windows-self-test.json'
+          $app = Start-Process -FilePath "$PWD/build/windows/ChemoDose.exe" -ArgumentList @('--self-test', '--test-report', $report) -PassThru
+          if (-not $app.WaitForExit(90000)) { $app.Kill(); throw 'Windows application startup test timed out.' }
+          if (Test-Path $report) { Get-Content $report }
+          if ($app.ExitCode -ne 0) { throw "Windows self-test exited with code $($app.ExitCode)." }
+          $result = Get-Content $report | ConvertFrom-Json
+          if (-not $result.passed) { throw 'Windows self-test failed.' }
+      - name: Preserve runtime test record and screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-verification
+          path: |
+            build/verification/*
+            build/windows/ChemoDose.exe
+          if-no-files-found: warn
+          retention-days: 30
