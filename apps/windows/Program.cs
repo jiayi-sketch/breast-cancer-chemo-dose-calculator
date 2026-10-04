@@ -247,7 +247,7 @@ internal sealed class DoseWindow : Form
               for (const code of ['zh-Hant','en','zh-Hans']) {
                 const chooser=document.getElementById('language');chooser.value=code;chooser.dispatchEvent(new Event('change',{bubbles:true}));
                 const cleared=document.getElementById('raw-result').textContent==='';
-                const retained=document.getElementById('height').value==='180' && document.getElementById('reviewer').value==='合成测试';
+                const retained=document.getElementById('height').value==='180' && document.getElementById('reviewer').value==='合成测试' && document.getElementById('bsa-value').textContent==='2.000';
                 const reset=!document.getElementById('confirmed').checked && !document.getElementById('renal-confirmed').checked;
                 document.getElementById('renal-confirmed').checked=true;
                 document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
@@ -262,6 +262,7 @@ internal sealed class DoseWindow : Form
               const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
               const fits=!!active && [...active.children].every(c=>{const r=c.getBoundingClientRect();return r.top>=bounds.top && r.bottom<=bounds.bottom+1;});
               const cleared=document.getElementById('raw-result').textContent==='';
+              window.scrollTo(0,0);
               return {ready:window.ChemoAppReady,version:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
                 languages,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
                 count:window.ChemoCatalogue.regimens.filter(r=>r.entryType==='regimen').length,rows:result.rows.length,first,longName:!!long,fits,cleared,
