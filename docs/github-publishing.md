@@ -1,6 +1,10 @@
 # 建立 GitHub 项目
 
-源码已准备，目前尚未创建或上传远程仓库。
+项目仓库：[jiayi-sketch/breast-cancer-chemo-dose-calculator](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator)。
+
+测试版：[v0.2.2-preview](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v0.2.2-preview)，包含 Android APK、Apple 芯片 Mac DMG、Windows 声明修订 EXE、源码包、许可、说明和校验文件。附件中的中文说明文件使用英文文件名，以避免 GitHub 文件名转换冲突。
+
+以下步骤供后续版本或建立自己的仓库参考：
 
 1. 登录 GitHub，右上角 + → New repository。
 2. 名称可用 breast-cancer-chemo-dose-calculator。说明可写“面向医生和药师的离线剂量算术核对工具，支持 Android 与 Apple 芯片 Mac”。
@@ -19,4 +23,4 @@ git remote add origin https://github.com/jiayi-sketch/breast-cancer-chemo-dose-c
 git push -u origin main
 ```
 
-作者署名：GitHub @jiayi-sketch。发布前确认所用账号和仓库地址；目前尚未实际发布。
+作者署名：GitHub @jiayi-sketch。后续版本发布前请核对账号、仓库地址及 SHA256SUMS.txt。
