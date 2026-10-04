@@ -18,6 +18,11 @@ public final class MainActivity extends Activity {
     private WebView web;
     private static final String ROOT = "file:///android_asset/web/";
 
+    private String language = "zh-Hans";
+    private static boolean supportedLanguage(String value) {
+        return "zh-Hans".equals(value) || "zh-Hant".equals(value) || "en".equals(value);
+    }
+
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setStatusBarColor(Color.WHITE);
@@ -47,15 +52,24 @@ public final class MainActivity extends Activity {
         });
         web.addJavascriptInterface(new ClipboardBridge(), "AndroidBridge");
         setContentView(web);
-        web.loadUrl(ROOT + "index.html");
+        String saved = getSharedPreferences("interface", MODE_PRIVATE).getString("language", "zh-Hans");
+        language = supportedLanguage(saved) ? saved : "zh-Hans";
+        web.loadUrl(ROOT + "index.html?lang=" + language);
     }
 
     private final class ClipboardBridge {
+        @JavascriptInterface public void saveLanguage(final String value) {
+            if (!supportedLanguage(value)) return;
+            runOnUiThread(new Runnable() { @Override public void run() {
+                language = value;
+                getSharedPreferences("interface", MODE_PRIVATE).edit().putString("language", value).apply();
+            }});
+        }
         @JavascriptInterface public void copySummary(final String value) {
             if (value == null || value.length() > 30000) return;
             runOnUiThread(new Runnable() { @Override public void run() {
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                ClipData data = ClipData.newPlainText("剂量核对摘要", value);
+                ClipData data = ClipData.newPlainText("en".equals(language) ? "Dose verification summary" : "zh-Hant".equals(language) ? "劑量核對摘要" : "剂量核对摘要", value);
                 if (android.os.Build.VERSION.SDK_INT >= 33) {
                     android.os.PersistableBundle extras = new android.os.PersistableBundle();
                     extras.putBoolean("android.content.extra.IS_SENSITIVE", true);
