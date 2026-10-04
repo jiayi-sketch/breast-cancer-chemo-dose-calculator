@@ -11,7 +11,7 @@ function setup(t) {
     suppressInsecureJavaScriptEnvironmentWarning:true,
     navigation:{disableMainFrameNavigation:true,disableChildFrameNavigation:true,disableChildPageNavigation:true}}});
   w.document.write(readFileSync(new URL('index.html',root),'utf8'));
-  for (const f of ['core.browser.js','catalogue.browser.js','catalogue-engine.browser.js','catalogue-ui.js']) w.eval(readFileSync(new URL(f,root),'utf8'));
+  for (const f of ['core.browser.js','catalogue.browser.js','catalogue-engine.browser.js','translations.browser.js','i18n.js','catalogue-ui.js']) w.eval(readFileSync(new URL(f,root),'utf8'));
   const el = id => w.document.getElementById(id);
   const input = (id,value,event='input') => { el(id).value=value; el(id).dispatchEvent(new w.Event(event,{bubbles:true})); };
   const select = id => { const b = w.document.querySelector('[data-entry-id="'+id+'"]'); assert.ok(b,id); b.click(); };

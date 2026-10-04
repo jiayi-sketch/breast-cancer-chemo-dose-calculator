@@ -15,7 +15,7 @@ function setup(t) {
   // Only our reviewed application files are evaluated; no remote resources are loaded.
   window.document.write(readFileSync(new URL('manual.html', root), 'utf8'));
   window.eval(readFileSync(new URL('core.browser.js', root), 'utf8'));
-  window.eval(readFileSync(new URL('app.js', root), 'utf8'));
+  for (const f of ['translations.browser.js','i18n.js','app.js']) window.eval(readFileSync(new URL(f, root), 'utf8'));
   const el = id => window.document.getElementById(id);
   const input = (id, value) => {
     el(id).value = value;
