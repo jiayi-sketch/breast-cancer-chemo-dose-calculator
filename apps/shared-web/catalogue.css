@@ -75,3 +75,11 @@ select{padding-right:36px}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 .usage-notice{padding:10px 16px;border-bottom:1px solid #d5e3ed;background:#fff;color:#17324a;font-size:13px;line-height:1.6;overflow-wrap:anywhere}.usage-notice span{display:block}
+
+/* Language controls keep labels visible and retain a 44px touch target. */
+.header-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.language-control {display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;flex-shrink:0}
+.language-control select {width:auto;min-width:130px;min-height:44px;margin:0;cursor:pointer}
+html[lang="en"] .entry-button strong, html[lang="en"] .drug-title {overflow-wrap:anywhere}
+html[lang="en"] .patient-grid label, html[lang="en"] .renal-grid label {min-width:0}
+@media(max-width:760px) {.topbar,.app-header {flex-wrap:wrap;gap:12px}.header-actions {width:100%;justify-content:space-between}.language-control {flex-wrap:wrap}.language-control select {max-width:100%}}
