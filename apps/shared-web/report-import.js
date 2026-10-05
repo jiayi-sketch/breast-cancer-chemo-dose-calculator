@@ -38,12 +38,12 @@
         corePath:new URL('ocr/',location.href).href,
         langPath:new URL('ocr/',location.href).href,
         workerBlobURL:false,cacheMethod:'none',gzip:true,
-        errorHandler:()=>{if(current(request))fail(request);}
+        errorHandler:error=>{if(window.ChemoImportTest)window.ChemoImportTest.error=String(error?.message||error);if(current(request))fail(request);}
       });
       if(!current(request))return;
       worker=localWorker;
       const result=await localWorker.recognize(data);done(result.data.text,request,true);
-    }catch(error){fail(request);}finally{if(localWorker){await localWorker.terminate().catch(()=>{});if(worker===localWorker)worker=null;}}
+    }catch(error){if(window.ChemoImportTest)window.ChemoImportTest.error=String(error?.message||error);fail(request);}finally{if(localWorker){await localWorker.terminate().catch(()=>{});if(worker===localWorker)worker=null;}}
   }
   function receive(message){
     const request=pending;

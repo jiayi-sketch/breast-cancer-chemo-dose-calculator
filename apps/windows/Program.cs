@@ -325,7 +325,7 @@ internal sealed class DoseWindow : Form
                 reportChecks.push({language:code,matched,cleared,passed:matched&&cleared});
               }
               const chooser=document.getElementById('language');chooser.value='en';chooser.dispatchEvent(new Event('change',{bubbles:true}));
-              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP(Nab-paclitaxel+Carboplatin)'));
+              const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
               const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
               const fits=!!active && [...active.children].every(c=>{const r=c.getBoundingClientRect();return r.top>=bounds.top && r.bottom<=bounds.bottom+1;});
@@ -362,10 +362,10 @@ internal sealed class DoseWindow : Form
             graphics.DrawString("SYNTHETIC REPORT - NOT A PATIENT\nER: 80%; PR: 20%; HER2: 3+\nKi-67: 35%",font,Brushes.Black,new PointF(40,40));
             Clipboard.SetImage(bitmap);
         }
-        await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImport.request('clipboard')");
+        await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImportTest={};window.ChemoImport.request('clipboard')");
         var deadline = DateTime.UtcNow.AddSeconds(40);
         while (DateTime.UtcNow < deadline && await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImport.busy") == "true") await Task.Delay(250);
-        string ocrResult = await web.CoreWebView2.ExecuteScriptAsync("({passed:document.getElementById('report-import-dialog').open && document.getElementById('report-field-ER').value==='positive' && document.getElementById('report-field-PR').value==='positive' && document.getElementById('report-field-IHC').value==='3+' && !document.getElementById('report-reviewed').checked && document.getElementById('raw-result').textContent==='',status:document.getElementById('report-import-status').textContent})");
+        string ocrResult = await web.CoreWebView2.ExecuteScriptAsync("({passed:document.getElementById('report-import-dialog').open && document.getElementById('report-field-ER').value==='positive' && document.getElementById('report-field-PR').value==='positive' && document.getElementById('report-field-IHC').value==='3+' && !document.getElementById('report-reviewed').checked && document.getElementById('raw-result').textContent==='',status:document.getElementById('report-import-status').textContent,error:window.ChemoImportTest?.error})");
         using var ocr = JsonDocument.Parse(ocrResult);
         bool ocrPassed = ocr.RootElement.GetProperty("passed").GetBoolean();
         if (testReport is not null) {
