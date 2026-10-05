@@ -356,7 +356,8 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
         bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
-        // Real renderer + bundled OCR + native clipboard, using only fictional text.
+        // Real renderer + bundled OCR + native clipboard, starting from an empty fictional case.
+        await web.CoreWebView2.ExecuteScriptAsync("document.getElementById('reports-clear').click();document.getElementById('reports-open').click()");
         using (var bitmap = new Bitmap(1600,500)) {
             using var graphics = Graphics.FromImage(bitmap);graphics.Clear(Color.White);
             using var font = new Font("Arial",36);
