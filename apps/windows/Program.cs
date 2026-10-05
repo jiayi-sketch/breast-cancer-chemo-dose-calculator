@@ -96,7 +96,7 @@ internal sealed class DoseWindow : Form
             using Stream stream = AppAssembly.GetManifestResourceStream(name)!;
             using var buffer = new MemoryStream();
             stream.CopyTo(buffer);
-            assets.Add("/" + name[4..], buffer.ToArray());
+            assets.Add("/" + name[4..].Replace('\\', '/'), buffer.ToArray());
         }
         if (testing)
         {
@@ -325,6 +325,7 @@ internal sealed class DoseWindow : Form
                 reportChecks.push({language:code,matched,cleared,passed:matched&&cleared});
               }
               const chooser=document.getElementById('language');chooser.value='en';chooser.dispatchEvent(new Event('change',{bubbles:true}));
+              document.getElementById('section-0').click();
               const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
               const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
