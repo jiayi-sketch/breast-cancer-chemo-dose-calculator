@@ -59,7 +59,7 @@ Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、�
 | --- | --- | --- |
 | [Android APK](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-android.apk) | Android 9 / API 28 及以上 | 沿用项目测试签名，versionCode 9；未完成真机验收 |
 | [Apple 芯片 Mac DMG](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-macos-arm64.dmg) | M 系列 Mac，macOS 13 及以上 | ad-hoc 签名，未 Apple 公证；本版启动及界面验收未完成 |
-| [Windows x64 EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-windows-x64.exe) | Windows 10 22H2 / Windows 11，Intel 或 AMD 64 位电脑 | 自包含 .NET；需 WebView2；本版原生运行验收未完成 |
+| [Windows x64 EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-windows-x64.exe) | Windows 10 22H2 / Windows 11，Intel 或 AMD 64 位电脑 | 自包含 .NET；需 WebView2；Windows 原生虚构截图 OCR、三语界面及剪贴板自检通过，详见 [验证记录](docs/verification-2.0.0.md) |
 | [Windows x86 兼容版 ZIP](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-windows-x86-legacy.zip) | 目标 Win7 SP1 / XP SP3 32 位；按运行环境设计亦可在 Win10 x86/x64、Win11 x64 使用 | 需 .NET Framework 4.x；不需 WebView2；未在这些 Windows 系统实际验收 |
 
 [完整源码 ZIP](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/ChemoDose-2.0.0-source.zip) · [SHA256 校验文件](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/SHA256SUMS.txt) · [本版验证记录](docs/verification-2.0.0.md)
