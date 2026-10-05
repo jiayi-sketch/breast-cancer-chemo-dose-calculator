@@ -15,7 +15,7 @@ function setup(t) {
   const el = id => w.document.getElementById(id);
   const input = (id,value,event='input') => { el(id).value=value; el(id).dispatchEvent(new w.Event(event,{bubbles:true})); };
   const select = id => { const b = w.document.querySelector('[data-entry-id="'+id+'"]'); assert.ok(b,id); b.click(); };
-  const fill = () => {input('height','180');input('weight','80');input('reviewer','合成测试');input('renal-value','50');input('renal-method','虚构参数');el('renal-confirmed').checked=true;};
+  const fill = () => {input('height','180');input('weight','80');input('reviewer','合成测试');input('renal-value','50');el('renal-confirmed').checked=true;};
   const calculate = () => {el('confirmed').checked=true;el('calculate').click();};
   const result = () => JSON.parse(el('raw-result').textContent);
   t.after(()=>w.happyDOM.abort());
@@ -70,7 +70,7 @@ test('missing inputs or kidney confirmation never leave partial or stale results
 });
 test('every patient or reviewer edit invalidates results and confirmation',t=>{
   const {el,input,fill,calculate}=setup(t);
-  for(const [id,value] of [['height','181'],['weight','81'],['renal-value','60'],['renal-method','新来源'],['reviewer','新核对人']]){
+  for(const [id,value] of [['height','181'],['weight','81'],['renal-value','60'],['reviewer','新核对人']]){
     fill();calculate();input(id,value);
     assert.equal(el('confirmed').checked,false,id);assert.equal(el('copy').disabled,true,id);
     assert.equal(el('raw-result').textContent,'',id);
@@ -103,7 +103,7 @@ test('oral dose is a single-drug reference and tamoxifen requires choosing one f
 });
 test('four sections are populated; radiation is read-only; clearing removes patient data',t=>{
   const {el,fill,calculate}=setup(t);fill();calculate();el('clear-patient').click();
-  for(const id of ['height','weight','renal-value','renal-method','reviewer'])assert.equal(el(id).value,'');
+  for(const id of ['height','weight','renal-value','reviewer'])assert.equal(el(id).value,'');
   assert.equal(el('bsa-value').textContent,'—');assert.equal(el('confirmed').checked,false);
   for(let i=0;i<4;i++){el('section-'+i).click();assert.ok(el('entry-list').querySelectorAll('button').length>0);}
   assert.equal(el('dose-workspace').hidden,true);assert.match(el('entry-source').textContent,/PDF 95/);

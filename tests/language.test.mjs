@@ -18,11 +18,14 @@ function setup(t,page='index',lang='zh-Hans') {
 for(const lang of ['zh-Hans','zh-Hant','en']) {
  test(lang+': complete regimen arithmetic, copy and source numbers remain consistent',t=>{
   const {w,el,input,calculate}=setup(t,'index',lang);let copied;w.AndroidBridge={copySummary:v=>copied=v};
-  for(const [id,v]of [['height','180'],['weight','80'],['renal-value','50'],['renal-method','原文方法：首剂'],['reviewer','核对人：医师']])input(id,v);
+  for(const [id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','核对人：医师']])input(id,v);
   el('renal-confirmed').checked=true;calculate();el('copy').click();
+  assert.equal(el('renal-method'),null);
   const r=JSON.parse(el('raw-result').textContent);
+  assert.equal('method' in r.inputs.renalFunction,false);
+  assert.ok(r.rows.every(row=>!('renalMethod' in row.result.basis)));
   assert.deepEqual(r.rows.map(row=>row.result.quantities.map(q=>q.valueMg)),[[150],[450],[640,480],[840,420]]);
-  assert.ok(copied.includes('原文方法：首剂'));assert.ok(copied.includes('核对人：医师'));
+  assert.doesNotMatch(copied,/undefined|原文方法/);assert.ok(copied.includes('核对人：医师'));
   assert.ok(copied.includes('48'));assert.ok(copied.includes('51'));assert.ok(copied.includes('150.00 mg'));
   assert.equal(w.document.documentElement.lang,lang);
   if(lang==='en'){assert.match(el('entry-title').textContent,/Docetaxel/);assert.match(copied,/Arithmetic verification sheet/);assert.match(el('entry-source').textContent,/PDF pages 48, 51 \/ printed pages 31, 34/);}
@@ -32,12 +35,13 @@ for(const lang of ['zh-Hans','zh-Hant','en']) {
   const {w,el,input,calculate}=setup(t,'manual',lang);let copied;w.AndroidBridge={copySummary:v=>copied=v};
   for(const [kind,a,b,expected]of [['bsa',7.5,null,[15]],['bsa_range',7.5,10,[15,20]],['weight',2,null,[160]],['weight_seq',2,1,[160,80]],['fixed',15,null,[15]],['fixed_seq',15,10,[15,10]],['fixed_alt',15,10,[10]],['auc',2,null,[150]]]) {
    input('kind',kind,'change');
-   for(const[id,v]of [['item-name','自填首剂'],['reference','自填来源：目录'],['reviewer','自填核对人'],['dose1',String(a)],['dose2',b===null?'':String(b)],['height','180'],['weight','80'],['renal-value','50'],['renal-method','原文方法']])input(id,v);
+   for(const[id,v]of [['item-name','自填首剂'],['reference','自填来源：目录'],['reviewer','自填核对人'],['dose1',String(a)],['dose2',b===null?'':String(b)],['height','180'],['weight','80'],['renal-value','50']])input(id,v);
    if(kind==='fixed_alt'){input('schedule1','原文频次一');input('schedule2','原文频次二');input('alternative','1');}
    el('renal-confirmed').checked=true;calculate();assert.equal(el('form-error').hidden,true,el('form-error').textContent);
    assert.deepEqual(JSON.parse(el('raw-result').textContent).quantities.map(q=>q.valueMg),expected);el('copy').click();
    assert.ok(copied.includes('自填首剂'));assert.ok(copied.includes('自填来源：目录'));assert.ok(copied.includes('自填核对人'));
    if(kind==='fixed_alt')assert.ok(copied.includes('原文频次二'));
+   if(kind==='auc'){assert.equal(el('renal-method'),null);assert.equal('renalMethod' in JSON.parse(el('raw-result').textContent).basis,false);}
   }
  });
 }
@@ -69,7 +73,7 @@ test('changing language preserves inputs and selected alternative but clears res
 });
 test('language switch preserves the live BSA preview while invalidating dose results',t=>{
  const{el,input,language,calculate}=setup(t);
- for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['renal-method','合成'],['reviewer','合成']])input(id,v);
+ for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成']])input(id,v);
  el('renal-confirmed').checked=true;calculate();assert.equal(el('bsa-value').textContent,'2.000');
  language('en');assert.equal(el('bsa-value').textContent,'2.000');assert.equal(el('raw-result').textContent,'');
  language('zh-Hant');assert.equal(el('bsa-value').textContent,'2.000');assert.equal(el('height').value,'180');
@@ -90,7 +94,7 @@ test('unsupported language is ignored and only allowed language preference is se
 });
 test('late native clipboard acknowledgement cannot overwrite the language-change status',t=>{
  const{w,el,input,language,calculate}=setup(t);const sent=[],listeners=new Set();w.chrome={webview:{postMessage:v=>sent.push(v),addEventListener:(_,f)=>listeners.add(f),removeEventListener:(_,f)=>listeners.delete(f)}};
- for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['renal-method','合成'],['reviewer','合成']])input(id,v);el('renal-confirmed').checked=true;calculate();el('copy').click();language('en');
+ for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成']])input(id,v);el('renal-confirmed').checked=true;calculate();el('copy').click();language('en');
  for(const fn of [...listeners])fn({data:{type:'copySummaryResult',requestId:sent[0].requestId,ok:true}});
  assert.match(el('message').textContent,/Language changed/);assert.equal(listeners.size,0);assert.equal(el('copy').disabled,true);
 });

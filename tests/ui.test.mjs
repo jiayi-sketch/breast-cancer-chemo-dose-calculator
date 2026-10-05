@@ -61,7 +61,7 @@ for (const [mode, first, second, expected] of cases) {
       input('alternative', '1');
     }
     if (mode === 'auc') {
-      input('renal-value', '50'); input('renal-method', '虚构算术测试');
+      input('renal-value', '50');
       submit(); assert.equal(el('result-content').hidden, true);
       el('renal-confirmed').checked = true;
     }
@@ -87,7 +87,7 @@ test('editing each relevant input immediately removes previous quantities and co
 test('renal edits invalidate both confirmations and mode changes remove old coefficients', t => {
   const {el, input, submit} = setup(t);
   el('example').click(); input('kind', 'auc'); input('dose1','2');
-  input('renal-value','50'); input('renal-method','测试');
+  input('renal-value','50');
   el('renal-confirmed').checked = true; submit();
   input('renal-value','60');
   assert.equal(el('renal-confirmed').checked, false);
