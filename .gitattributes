@@ -1,3 +1,4 @@
-apps/shared-web/* text eol=lf
+# Preserve all embedded web bytes, including nested OCR models and engines.
+apps/shared-web/** -text
 LICENSE text eol=lf
 apps/windows/licenses/* -text
