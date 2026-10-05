@@ -103,7 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if testing {
             let script = """
-            for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['renal-method','合成测试'],['reviewer','合成测试']]) {
+            for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
               document.getElementById(id).value = value;
               document.getElementById(id).dispatchEvent(new Event('input',{bubbles:true}));
             }
