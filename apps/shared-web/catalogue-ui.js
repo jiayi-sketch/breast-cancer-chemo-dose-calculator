@@ -111,9 +111,9 @@
     const bsa = window.DoseCore.calculateBsa({heightCm: number('height'), weightKg: number('weight')});
     el('bsa-value').textContent = bsa.status === 'ok' ? bsa.valueM2.toFixed(3) : '—';
   }
-  ['height', 'weight', 'renal-value', 'renal-method', 'reviewer'].forEach(id => {
+  ['height', 'weight', 'renal-value', 'reviewer'].forEach(id => {
     el(id).addEventListener('input', () => {
-      if (id === 'renal-value' || id === 'renal-method' || id === 'height' || id === 'weight') el('renal-confirmed').checked = false;
+      if (id === 'renal-value' || id === 'height' || id === 'weight') el('renal-confirmed').checked = false;
       invalidate(); updateBsa();
     });
   });
@@ -122,7 +122,7 @@
     if (!el('confirmed').checked) invalidate('请核对后再计算。');
   });
   el('clear-patient').addEventListener('click', () => {
-    ['height', 'weight', 'renal-value', 'renal-method', 'reviewer'].forEach(id => { el(id).value = ''; });
+    ['height', 'weight', 'renal-value', 'reviewer'].forEach(id => { el(id).value = ''; });
     el('renal-confirmed').checked = false;
     el('alternatives').querySelectorAll('select').forEach(s => { s.value = ''; });
     invalidate('本次参数和结果已清空。'); updateBsa();
@@ -133,7 +133,7 @@
     const acknowledgement = {confirmed: el('confirmed').checked, reviewer: el('reviewer').value};
     const inputs = {heightCm: number('height'), weightKg: number('weight'), alternatives: {}};
     if (selected?.drugs?.some(d => d.kind === 'auc')) inputs.renalFunction = {
-      value: number('renal-value'), unit: 'mL/min', method: el('renal-method').value.trim(), confirmed: el('renal-confirmed').checked};
+      value: number('renal-value'), unit: 'mL/min', confirmed: el('renal-confirmed').checked};
     el('alternatives').querySelectorAll('select').forEach(s => { if (s.value !== '') inputs.alternatives[s.id.slice(4)] = Number(s.value); });
     current = null; el('copy').disabled = true; el('audit').hidden = true;
     el('raw-result').textContent = ''; el('summary-text').textContent = ''; renderRows();
@@ -169,14 +169,14 @@
   el('about-close').addEventListener('click', () => el('about-dialog').close());
 
   function localizedSummary(calculation) {
-    // Translate controlled labels and catalogue fields only. Preserve user-entered reviewer / method verbatim.
+    // Translate controlled labels and catalogue fields only. Preserve user-entered reviewer verbatim.
     const r = cat.regimens.find(r => r.id === calculation.regimenId), input = calculation.inputs;
     return [t('乳腺癌剂量计算')+' · '+cat.appVersion+' · '+t('算术核对单（非处方）'),
       t(r.section)+' / '+t(r.subtype),t(r.name),t(cat.source.title)+' · '+t(engine.sourceLabel(r)),
       t('目录版本：')+calculation.catalogueVersion,t('本次核对人：')+calculation.reviewer,
       t('计算时间：')+calculation.calculatedAt,
       t('身高：')+(input.heightCm ?? t('未填写'))+' cm; '+t('体重：')+(input.weightKg ?? t('未填写'))+' kg',
-      ...(r.drugs.some(d=>d.kind==='auc') ? [t('肾功能：')+input.renalFunction.value+' mL/min; '+t('来源：')+input.renalFunction.method] : []),
+      ...(r.drugs.some(d=>d.kind==='auc') ? [t('肾功能：')+input.renalFunction.value+' mL/min'] : []),
       ...calculation.rows.map(row=>{const d=r.drugs.find(d=>d.id===row.drugId);
         return '['+t(d.phaseLabel)+'] '+t(d.name)+'\n'+t('标准：')+t(engine.standardDose(d))+
           '\n'+t('计算：')+t(engine.quantityLabel(row.result))+'\n'+t(d.schedule)+'; '+t(d.duration)+'\n'+t(engine.sourceLabel(d));}),

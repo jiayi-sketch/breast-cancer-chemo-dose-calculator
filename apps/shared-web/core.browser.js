@@ -4,7 +4,7 @@ window.DoseCore = (function(){
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Arithmetic migration prototype. No network, storage, UI or treatment selection.
 
-const ENGINE_VERSION = '1.0.2';
+const ENGINE_VERSION = '1.0.3';
 
 const LEGACY_INPUT_LIMITS = Object.freeze({
   heightCm: Object.freeze([80, 250]         ),
@@ -42,7 +42,6 @@ const LEGACY_INPUT_LIMITS = Object.freeze({
                     
                    
                   
-                   
                    
                        
     
@@ -87,7 +86,6 @@ const LEGACY_INPUT_LIMITS = Object.freeze({
                       
                    
                         
-                         
                               
     
  
@@ -225,14 +223,14 @@ function calculateDose(request         )                    {
       return fail('invalid', 'renalFunction.unit', 'RENAL_UNIT_MISMATCH',
         '此计算接口要求 mL/min；不自动把体表面积标准化的 eGFR 当作同一数值。');
     }
-    if (!text(renal.method) || renal.confirmed !== true) {
+    if (renal.confirmed !== true) {
       return fail('blocked', 'renalFunction', 'RENAL_CONFIRMATION_REQUIRED',
-        '请记录肾功能参数来源并确认其适用性。');
+        '请确认肾功能参数的单位和适用性。');
     }
     const issue = bounded(renal.value, 'renalFunction.value', '肾功能参数（mL/min）', LEGACY_INPUT_LIMITS.renalMlMin);
     if (issue) return issue;
     const renalMlMin = renal.value          ;
-    Object.assign(basis, { expression: 'AUC × (renalMlMin + 25)', renalMlMin, renalMethod: renal.method });
+    Object.assign(basis, { expression: 'AUC × (renalMlMin + 25)', renalMlMin });
     quantities = [{ role: 'single', valueMg: doses[0] * (renalMlMin + 25) }];
   }
 

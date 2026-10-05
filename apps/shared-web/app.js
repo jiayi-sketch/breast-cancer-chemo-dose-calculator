@@ -71,7 +71,7 @@
   }
   el('dose-form').addEventListener('input', function(e) {
     if (e.target.id === 'confirmed') { resetResult(); return; }
-    if (e.target.id === 'renal-value' || e.target.id === 'renal-method') el('renal-confirmed').checked = false;
+    if (e.target.id === 'renal-value') el('renal-confirmed').checked = false;
     invalidate();
   });
   el('kind').addEventListener('change', function () {
@@ -85,7 +85,7 @@
     if (!reviewer) return error('请填写核对人。', 'reviewer');
     var kind = el('kind').value;
     var inputs = { heightCm: number('height'), weightKg: number('weight') };
-    if (kind === 'auc') inputs.renalFunction = { value: number('renal-value'), unit: 'mL/min', method: el('renal-method').value.trim(), confirmed: el('renal-confirmed').checked };
+    if (kind === 'auc') inputs.renalFunction = { value: number('renal-value'), unit: 'mL/min', confirmed: el('renal-confirmed').checked };
     if (el('alternative').value !== '') inputs.alternativeIndex = Number(el('alternative').value);
     var rule = { id: 'manual-' + kind, version: 'manual-entry-v1', kind: kind,
       dose: modes[kind][1] ? [number('dose1'), number('dose2')] : number('dose1'),
