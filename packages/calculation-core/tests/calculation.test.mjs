@@ -33,7 +33,7 @@ for (const [i, item] of fixtures.cases.entries()) {
   test(`legacy arithmetic vector ${i + 1}: ${item.kind}, ${item.heightCm}/${item.weightKg}`, () => {
     const inputs = {
       heightCm: item.heightCm, weightKg: item.weightKg,
-      renalFunction: { value: item.renalMlMin, unit: 'mL/min', method: 'synthetic-test-input', confirmed: true },
+      renalFunction: { value: item.renalMlMin, unit: 'mL/min', confirmed: true },
     };
     near(calculateBsa(inputs).valueM2, item.expectedBsaM2);
     const result = calculateDose(request(item.kind, item.dose, inputs));
@@ -107,18 +107,16 @@ test('bad coefficients, reversed ranges and floating-point overflow never produc
   expectFailure(calculateDose(request('weight', Number.MAX_VALUE)), 'invalid', 'NON_FINITE_RESULT');
 });
 
-test('AUC requires a source, explicit confirmation and an absolute mL/min unit', () => {
+test('AUC requires explicit confirmation and absolute mL/min, without method or source', () => {
   expectFailure(calculateDose(request('auc', 2, {})), 'needs-input', 'RENAL_INPUT_REQUIRED');
-  const renal = { value: 90, unit: 'mL/min/1.73m²', method: 'synthetic', confirmed: true };
+  const renal = { value: 90, unit: 'mL/min/1.73m²', confirmed: true };
   expectFailure(calculateDose(request('auc', 2, { renalFunction: renal })), 'invalid', 'RENAL_UNIT_MISMATCH');
   renal.unit = 'mL/min'; renal.confirmed = false;
   expectFailure(calculateDose(request('auc', 2, { renalFunction: renal })), 'blocked', 'RENAL_CONFIRMATION_REQUIRED');
-  renal.confirmed = true; renal.method = '';
-  expectFailure(calculateDose(request('auc', 2, { renalFunction: renal })), 'blocked', 'RENAL_CONFIRMATION_REQUIRED');
-  renal.method = 'synthetic';
+  renal.confirmed = true;
   const result = calculateDose(request('auc', 2, { renalFunction: renal }));
   assert.equal(result.quantities[0].valueMg, 230);
-  assert.equal(result.basis.renalMethod, 'synthetic');
+  assert.equal('renalMethod' in result.basis, false);
   for (const value of [-1, 200.01]) {
     expectFailure(calculateDose(request('auc', 2, { renalFunction: { ...renal, value } })), 'invalid', 'OUT_OF_LEGACY_RANGE');
   }
