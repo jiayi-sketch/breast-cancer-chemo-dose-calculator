@@ -22,7 +22,7 @@ python3 scripts/build-native.py \
 
 ## Android
 
-aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 6，versionName 1.0.2，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
+aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 7，versionName 1.0.3，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
 
 首次构建在工作目录 signing 下生成测试私钥和随机密码。**后续同包名升级须保存并沿用此密钥**，删除工作目录前请安全备份 signing。它不属于源码，不能上传 GitHub。
 
@@ -43,7 +43,7 @@ Cocoa / WKWebView 原生 arm64 外壳，macOS 13+，非持久化 WebView。当�
 
 EXE/APK/DMG 与对应源码、LICENSE、构建说明一起交付。源码 ZIP 不包含 SDK、JDK、Node、node_modules、原 Windows EXE、指南 PDF 或签名私钥。
 
-## Windows 1.0.2
+## Windows 1.0.3
 
 Windows Forms + WebView2 原生外壳，与 Mac、安卓复用全部 11 个网页资源、同一方案目录和计算核心。发布的 EXE 内置 .NET 10 运行时与 WebView2 SDK/loader；无需用户另装 .NET，但需要微软 Evergreen WebView2 Runtime。推荐 Windows 11 x64，兼容 Windows 10 22H2 x64；不提供 Windows 7、32 位或 Windows ARM 原生版本。
 
@@ -56,7 +56,7 @@ python3 scripts/build-native.py --platform windows --node /path/to/node --dotnet
 在 Windows 上可运行：
 
 ```powershell
-.\ChemoDose-1.0.2-windows-x64.exe --self-test --test-report windows-self-test.json
+.\ChemoDose-1.0.3-windows-x64.exe --self-test --test-report windows-self-test.json
 ```
 
 自检使用合成数据，验证启动、版本、内置 TCbHP 计算、复制回执、长方案名边框和切换时旧结果清除；写入 JSON 与窗口内容截图，不读取真实病例。GitHub Windows workflow 提供相同验证。自检通过不代表临床验证或全部 Windows 设备兼容性。当前无 Authenticode 代码签名。
