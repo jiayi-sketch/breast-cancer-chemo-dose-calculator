@@ -2,7 +2,9 @@
 
 2026-10-05，应用版本 1.0.3，目录版本 2026.10.02。157 项核心/目录/DOM 测试及 TypeScript 严格检查通过。两页三语界面不再显示或要求肾功能方法/来源字段，核对记录与复制单不包含此项。缺少单位确认、错误单位及超出范围的肾功能数值仍阻止计算，Calvert 公式及全部方案数值与 1.0.2 一致。三语合成 TCbHP 四行结果保持 150、450、640/480、840/420 mg。
 
-原生构建及 Windows 运行验证结果将在本次发布前补齐。历史记录如下。
+APK 与最终 DMG 的 11 个共享网页文件及许可证逐字节匹配源码。Android versionCode 7，保持原签名证书；Mac arm64 构建、ad-hoc 严格签名及 DMG 校验通过。本版 Mac 未完成原生视觉验收，Android 尚未真机测试。
+
+[Windows 1.0.3 运行验证 #7](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37249533686) 在提交 ed73f82b555154df6974f1b01bbc9d0e0881c531 上通过。确认方法/来源栏不存在，无此文字也可正常计算，JSON 无 renalMethod；三語数值一致，语言偏好、复制、英文长名称、选择器和结果失效检查通过。发布 EXE 来自该次 Windows runner。首次运行 #6 因 GitHub 共享网页资源尚未同步完整而失败，补齐资源并逐字节核对后 #7 通过。历史记录如下。
 
 # 测试记录
 
