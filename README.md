@@ -28,7 +28,7 @@ Version 1.0.3 removes the renal function method/source text field and its requir
 
 Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、界面和计算核心。1.0.1 的 Windows 版采用全新原生外壳，包含与 Mac 相同的内置方案、分阶段剂量核对、自定义单药页面、复制功能和两行非商业声明。
 
-本版修正了 0.1.0 仅支持人工录入的偏差：根据作者原 Windows v3.0.2 程序恢复目录，并对照作者提供的《2026 CSCO乳腺癌诊疗指南》扫描页重新录入。包含 **52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡**；不是指南全书数据库，也不是旧 Windows 程序的完整移植。**未经独立临床验证。**
+本版修正了 0.1.0 仅支持人工录入的偏差：根据作者原 Windows v3.0.2 程序恢复目录，并对照作者提供的《2026 CSCO乳腺癌诊疗指南》扫描页重新录入。包含 **52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡**；
 
 0.2.1 修复方案列表条目被压缩导致文字越出选中框的问题：条目按内容自动增高，长名称完整换行；选中框与右侧方案同步刷新，分型下拉框统一为 44px 高度。方案内容和计算公式与 0.2.0 一致。
 
@@ -48,12 +48,12 @@ Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、�
 | 文件 | 适用设备 | 签名 |
 | --- | --- | --- |
 | ChemoDose-1.0.3-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 7 |
-| ChemoDose-1.0.3-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
-| ChemoDose-1.0.3-windows-x64.exe | Windows 11 x64 / Windows 10 22H2 x64，需 Microsoft WebView2 Runtime | 自包含 .NET 原生外壳；未 Authenticode 签名 |
+| ChemoDose-1.0.3-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，
+| ChemoDose-1.0.3-windows-x64.exe | Windows 11 x64 / Windows 10 22H2 x64，需 Microsoft WebView2 Runtime | 自包含 .NET 原生外壳；
 
 安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **1.0.3 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
 
-安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.3)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
+安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.3)。应用不联网、无账户、不持久化患者记录；
 
 Windows：双击 EXE 打开，无需另装 .NET。若提示缺少 WebView2，请从[微软官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)安装 Evergreen Runtime 后重试。本版未移植旧程序的报告识别与病理自动匹配。
 
