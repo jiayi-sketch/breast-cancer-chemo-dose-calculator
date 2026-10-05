@@ -51,7 +51,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '6',
+        'CFBundleVersion': '7',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
