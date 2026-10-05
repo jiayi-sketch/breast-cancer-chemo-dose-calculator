@@ -233,7 +233,7 @@ internal sealed class DoseWindow : Form
         // Only synthetic values. Exercises the embedded page in the actual Windows renderer.
         string result = await web.CoreWebView2.ExecuteScriptAsync("""
             (() => {
-              for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['renal-method','合成测试'],['reviewer','合成测试']]) {
+              for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
                 document.getElementById(id).value=value;
                 document.getElementById(id).dispatchEvent(new Event('input',{bubbles:true}));
               }
@@ -243,6 +243,7 @@ internal sealed class DoseWindow : Form
               const result=JSON.parse(document.getElementById('raw-result').textContent);
               const first=document.querySelector('.drug-value').textContent;
               document.getElementById('copy').click();
+              const renalMethodRemoved=!document.getElementById('renal-method') && !JSON.stringify(result).includes('renalMethod');
               const languages=[];
               for (const code of ['zh-Hant','en','zh-Hans']) {
                 const chooser=document.getElementById('language');chooser.value=code;chooser.dispatchEvent(new Event('change',{bubbles:true}));
@@ -264,7 +265,7 @@ internal sealed class DoseWindow : Form
               const cleared=document.getElementById('raw-result').textContent==='';
               window.scrollTo(0,0);
               return {ready:window.ChemoAppReady,version:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
-                languages,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
+                renalMethodRemoved,languages,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
                 count:window.ChemoCatalogue.regimens.filter(r=>r.entryType==='regimen').length,rows:result.rows.length,first,longName:!!long,fits,cleared,
                 notice:document.body.textContent.includes('For academic exchange only. Commercial use is prohibited.') && document.body.textContent.includes('Copyright GitHub @jiayi-sketch')};
             })()
@@ -281,6 +282,7 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("engine").GetString() == Version && r.GetProperty("count").GetInt32() == 52
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
+            && r.GetProperty("renalMethodRemoved").GetBoolean()
             && r.GetProperty("languages").EnumerateArray().All(item=>item.GetProperty("passed").GetBoolean())
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
