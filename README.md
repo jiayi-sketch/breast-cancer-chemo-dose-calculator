@@ -1,6 +1,6 @@
 # 乳腺癌剂量计算工具
 
-Breast Cancer Chemotherapy Dose Calculator · **1.0.2 三端多语言测试版** · 源码公开 · 非商业学术授权
+Breast Cancer Chemotherapy Dose Calculator · **1.0.3 三端多语言测试版** · 源码公开 · 非商业学术授权
 
 本软件是一款面向医生和药师的乳腺癌治疗方案查阅与剂量算术核对工具。内置数据依据《2026版中国临床肿瘤学会（CSCO）乳腺癌诊疗指南》整理，旨在帮助临床一线工作者更便捷地查阅方案，在录入并核对患者身高、体重及含卡铂方案所需的肾功能指标后，完成相应的剂量算术核对，减少手工查阅和计算所需的时间。
 
@@ -16,11 +16,15 @@ The program does not provide diagnoses, automatically select treatments or asses
 
 The program is distributed under a **noncommercial academic licence** with the corresponding source code, licence, installation instructions, verification records and `SHA256SUMS.txt`. **For academic exchange only. Commercial use is prohibited.** This is a source-available project, not an OSI-approved open-source licence. Please use fictional data when reporting issues and do not upload patient information. Updates will continue to improve the program.
 
-Version **1.0.2** offers **简体中文 / 繁體中文 / English** in the header on all three platforms. The setting covers interface labels, regimen names, guideline summaries, messages and copied verification sheets. Only the language preference is saved; patient inputs remain in window memory. Changing language retains entered parameters but clears results and requires renewed confirmation. Drug doses, schedules, source page references and calculation rules are shared across languages. Full audit JSON retains the original catalogue wording for traceability. Translations are for reference and have not undergone independent clinical validation.
+Version **1.0.3** offers **简体中文 / 繁體中文 / English** in the header on all three platforms. The setting covers interface labels, regimen names, guideline summaries, messages and copied verification sheets. Only the language preference is saved; patient inputs remain in window memory. Changing language retains entered parameters but clears results and requires renewed confirmation. Drug doses, schedules, source page references and calculation rules are shared across languages. Full audit JSON retains the original catalogue wording for traceability. Translations are for reference and have not undergone independent clinical validation.
+
+1.0.3 已移除肾功能“测定 / 估算方法与来源”填写栏，不再要求填写来源文字。保留肾功能值、mL/min 单位及适用性确认，Calvert 公式与方案剂量不变。
+
+Version 1.0.3 removes the renal function method/source text field and its required validation. The renal value, absolute mL/min unit and suitability confirmation remain; dose calculations are unchanged.
 
 ## 语言设置
 
-1.0.2 在 Windows、Mac 和 Android 页头提供 **简体中文 / 繁體中文 / English**。界面、方案名称、摘要、提示和复制核对单随语言切换。三端只保存语言偏好，不保存病例参数；切换语言会保留输入、清除旧结果并要求重新确认。药物数值、频次、出处及公式不变，完整 JSON 核对记录保留原始目录文字。翻译核对说明见 [语言核对记录](docs/language-review.md)。
+1.0.3 在 Windows、Mac 和 Android 页头提供 **简体中文 / 繁體中文 / English**。界面、方案名称、摘要、提示和复制核对单随语言切换。三端只保存语言偏好，不保存病例参数；切换语言会保留输入、清除旧结果并要求重新确认。药物数值、频次、出处及公式不变，完整 JSON 核对记录保留原始目录文字。翻译核对说明见 [语言核对记录](docs/language-review.md)。
 
 Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、界面和计算核心。1.0.1 的 Windows 版采用全新原生外壳，包含与 Mac 相同的内置方案、分阶段剂量核对、自定义单药页面、复制功能和两行非商业声明。
 
@@ -32,7 +36,7 @@ Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、�
 
 1. 选择“术前新辅助治疗 / 术后辅助治疗 / 后续内分泌治疗 / 保乳术后治疗”，按分型或方案、药物名称查找。
 2. 内置条目直接展示药物、标准剂量、给药日、疗程、推荐摘要和 PDF / 书页依据。
-3. 输入身高、体重；含卡铂时填写并核对肾功能值、单位与来源。固定剂量条目不要求身高体重。
+3. 输入身高、体重；含卡铂时填写肾功能值，并核对单位与适用性。固定剂量条目不要求身高体重。
 4. 填写核对人并确认本次方案和参数，计算各药每次给药量，按需复制核对单。
 
 首剂 / 后续剂量、剂量区间、序贯阶段分别显示。TC 4 周期和 6 周期为不同条目。他莫昔芬的两种频次必须选择其一。修改输入、切换方案、撤销确认会清除旧结果；任何药物缺少必要参数时，不输出部分结果。自定义单药算术核对作为次级页面保留。
@@ -43,13 +47,13 @@ Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库、�
 
 | 文件 | 适用设备 | 签名 |
 | --- | --- | --- |
-| ChemoDose-1.0.2-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 6 |
-| ChemoDose-1.0.2-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
-| ChemoDose-1.0.2-windows-x64.exe | Windows 11 x64 / Windows 10 22H2 x64，需 Microsoft WebView2 Runtime | 自包含 .NET 原生外壳；未 Authenticode 签名 |
+| ChemoDose-1.0.3-android.apk | Android 9 / API 28 及以上，更新的 Android System WebView | 沿用 0.1.0 项目测试证书，versionCode 7 |
+| ChemoDose-1.0.3-macos-arm64.dmg | Apple 芯片 M 系列 Mac，macOS 13 及以上 | arm64 原生外壳，ad-hoc 签名，未 Developer ID 签名及 Apple 公证 |
+| ChemoDose-1.0.3-windows-x64.exe | Windows 11 x64 / Windows 10 22H2 x64，需 Microsoft WebView2 Runtime | 自包含 .NET 原生外壳；未 Authenticode 签名 |
 
-安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **1.0.2 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
+安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **1.0.3 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
 
-安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.2)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
+安装包、源码包和校验文件见 [GitHub 测试版发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.3)。应用不联网、无账户、不持久化患者记录；仅明确点击“复制”时写入系统剪贴板。
 
 Windows：双击 EXE 打开，无需另装 .NET。若提示缺少 WebView2，请从[微软官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)安装 Evergreen Runtime 后重试。本版未移植旧程序的报告识别与病理自动匹配。
 
