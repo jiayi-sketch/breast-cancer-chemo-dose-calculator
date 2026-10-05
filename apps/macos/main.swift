@@ -69,9 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     @objc func showAbout() {
         let alert = NSAlert()
         alert.messageText = localized("乳腺癌剂量计算") + " " + appVersion
-        alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n输入仅保存在本次窗口内存中；未接入报告自动匹配。"
+        alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n输入仅保存在本次窗口内存中；支持离线报告文字识别与目录匹配。"
         if language == "en" {
-            alert.informativeText = "For academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\nApple Silicon preview\n52 regimens, 7 single-drug dose references and 18 guideline summary cards.\nTranscribed from the supplied 2026 CSCO guideline; not independently clinically validated.\nInputs remain in window memory only. Automatic report matching is not implemented."
+            alert.informativeText = "For academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\nApple Silicon preview\n52 regimens, 7 single-drug dose references and 18 guideline summary cards.\nTranscribed from the supplied 2026 CSCO guideline; not independently clinically validated.\nInputs remain in window memory only. Offline report text extraction and catalogue matching are supported."
         } else if language == "zh-Hant" {
             alert.informativeText = localized(alert.informativeText)
         }
@@ -110,14 +110,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             document.getElementById('renal-confirmed').checked = true;
             document.getElementById('confirmed').checked = true;
             document.getElementById('calculate').click();
-            JSON.stringify({ready:window.ChemoAppReady, bsa:window.DoseCore.calculateBsa({heightCm:180,weightKg:80}),
+            const reportChecks=[];
+              for (const code of ['zh-Hans','zh-Hant','en']) {
+                window.ChemoI18n.setLanguage(code);
+                document.getElementById('reports-example-load').click();document.getElementById('reports-analyze').click();
+                for (const [key,value] of [['phase','neo'],['menopause','pre'],['surgery','none'],['nodes','negative']]) {
+                  const element=document.getElementById('report-context-'+key);element.value=value;element.dispatchEvent(new Event('change',{bubbles:true}));
+                }
+                document.getElementById('report-reviewed').checked=true;document.getElementById('reports-match').click();
+                const match=document.querySelector('#report-matches [data-report-entry-id]');if(!match)throw new Error('No report match');match.click();
+                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+                  const element=document.getElementById(id);element.value=value;element.dispatchEvent(new Event('input',{bubbles:true}));
+                }
+                document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
+                const calculation=JSON.parse(document.getElementById('raw-result').textContent);
+                const matched=calculation.reportReview?.subtype==='HER2阳性' && calculation.rows.length===4;
+                const text=document.getElementById('report-ihc');text.value='ER(0%),PR(0%);HER2(0)';text.dispatchEvent(new Event('input',{bubbles:true}));
+                const cleared=document.getElementById('raw-result').textContent==='' && document.getElementById('reports-match').disabled;
+                reportChecks.push({language:code,matched,cleared,passed:matched&&cleared});
+              }
+              JSON.stringify({reportReady:window.ChemoReportReady,reportChecks,passed:reportChecks.every(r=>r.passed),ready:window.ChemoAppReady, bsa:window.DoseCore.calculateBsa({heightCm:180,weightKg:80}),
             regimen:document.getElementById('entry-title').textContent,
-            rows:JSON.parse(document.getElementById('raw-result').textContent).rows.length,
+            rows:reportChecks.length,
             rendered:document.querySelector('.drug-value').textContent});
             """
             webView.evaluateJavaScript(script) { value, error in
-                if let error = error { print("SELF_TEST_ERROR: \(error)") }
-                else { print("SELF_TEST_RESULT: \(value ?? "nil")") }
+                if let error = error { print("SELF_TEST_ERROR: \(error)"); exit(1) }
+                else {
+                    print("SELF_TEST_RESULT: \(value ?? "nil")")
+                    guard let text = value as? String, let data = text.data(using: .utf8),
+                          let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any], result["passed"] as? Bool == true else { exit(1) }
+                }
                 fflush(stdout)
                 NSApp.terminate(nil)
             }

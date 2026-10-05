@@ -38,6 +38,7 @@
     });
   }
   function showEntry(entry) {
+    window.ChemoReportReview = null;
     selected = entry; invalidate('填写参数并核对后计算。');
     empty(el('alternatives'));
     const isReference = !entry?.drugs;
@@ -90,6 +91,8 @@
     }
   }
   function setSection(value) {
+    el('report-workspace').hidden = true; el('catalogue-workspace').hidden = false;
+    el('reports-open').setAttribute('aria-pressed','false');
     section = value; selected = null; el('section-title').textContent = t(value);
     el('search').value = ''; empty(el('subtype'));
     const option = node('option', '全部'); option.value = ''; el('subtype').append(option);
@@ -139,6 +142,8 @@
     el('raw-result').textContent = ''; el('summary-text').textContent = ''; renderRows();
     const result = engine.calculateRegimen(cat, selected?.id, inputs, acknowledgement);
     if (result.status !== 'ok') { message(result.issues.map(i => i.message).join(' '), 'error'); return; }
+    const reportReview=window.ChemoReportReview;
+    if (reportReview?.entryId===selected?.id) result.reportReview=JSON.parse(JSON.stringify(reportReview));
     current = result; renderRows(); el('copy').disabled = false; el('audit').hidden = false;
     el('raw-result').textContent = JSON.stringify(result, null, 2);
     el('summary-text').textContent = localizedSummary(result);
@@ -175,6 +180,7 @@
       t(r.section)+' / '+t(r.subtype),t(r.name),t(cat.source.title)+' · '+t(engine.sourceLabel(r)),
       t('目录版本：')+calculation.catalogueVersion,t('本次核对人：')+calculation.reviewer,
       t('计算时间：')+calculation.calculatedAt,
+      ...(calculation.reportReview ? [t('报告已人工核对；目录匹配不代表患者适用性。')] : []),
       t('身高：')+(input.heightCm ?? t('未填写'))+' cm; '+t('体重：')+(input.weightKg ?? t('未填写'))+' kg',
       ...(r.drugs.some(d=>d.kind==='auc') ? [t('肾功能：')+input.renalFunction.value+' mL/min'] : []),
       ...calculation.rows.map(row=>{const d=r.drugs.find(d=>d.id===row.drugId);
@@ -197,5 +203,14 @@
     el('catalogue-count').textContent=t('52 个方案 · 7 个单药参考');
   });
   el('catalogue-count').textContent = t('52 个方案 · 7 个单药参考');
+  window.ChemoCatalogueUI = {
+    invalidate,
+    openEntry(id) {
+      const entry=[...cat.regimens,...cat.referenceCards].find(r=>r.id===id);
+      if (!entry) return false;
+      setSection(entry.section); el('subtype').value=entry.subtype; renderList(); showEntry(entry);
+      return true;
+    }
+  };
   setSection(section); window.ChemoAppReady = true;
 }());

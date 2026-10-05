@@ -6,7 +6,7 @@
 - calculation-disassembly.txt：原 Python 3.8 对应反汇编。
 - decompiled-candidates/*.txt：存在错误或不完整语法的候选文本，不可直接执行或作为临床依据。
 
-原指南声称、药物系数和报告匹配未完整核验，未启用到新界面。此处不包含原 EXE、患者记录或第三方运行时。
+此处历史候选文本不能直接运行。1.1.0-preview 已在静态核对字节码后独立重写报告文字识别和目录匹配，详见 ../docs/report-matching.md；它不是完整旧 Python 项目的恢复。此处不包含原 EXE、患者记录或第三方运行时。
 
 ## 作者与授权声明
 

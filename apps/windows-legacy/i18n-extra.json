@@ -1,0 +1,38 @@
+{
+  "en": {
+    "治疗栏目": "Treatment section",
+    "受体分型": "Receptor subtype",
+    "搜索": "Search",
+    "肾功能（mL/min）": "Renal function (mL/min)",
+    "请核对": "Please verify",
+    "计算": "Calculate",
+    "清除本次病例": "Clear current case",
+    "查看授权": "View licence",
+    "第三方许可": "Third-party licences",
+    "仅识别粘贴的报告文字，不含照片或扫描 PDF 的 OCR。": "Recognizes pasted report text only; photo and scanned PDF OCR is not included.",
+    "淋巴结状态": "Lymph node status",
+    "人工修正依据": "Reason for manual correction",
+    "打开所选目录条目": "Open selected catalogue entry",
+    "全乳切除": "Mastectomy",
+    "根治术": "Radical surgery",
+    "新辅助后衔接治疗": "Treatment after neoadjuvant therapy"
+  },
+  "zh-Hant": {
+    "治疗栏目": "治療欄目",
+    "受体分型": "受體分型",
+    "搜索": "搜尋",
+    "肾功能（mL/min）": "腎功能（mL/min）",
+    "请核对": "請覆核",
+    "计算": "計算",
+    "清除本次病例": "清除本次病例",
+    "查看授权": "查看授權",
+    "第三方许可": "第三方許可",
+    "仅识别粘贴的报告文字，不含照片或扫描 PDF 的 OCR。": "僅識別貼上的報告文字，不含照片或掃描 PDF 的 OCR。",
+    "淋巴结状态": "淋巴結狀態",
+    "人工修正依据": "人工修正依據",
+    "打开所选目录条目": "開啟所選目錄條目",
+    "全乳切除": "全乳切除",
+    "根治术": "根治術",
+    "新辅助后衔接治疗": "新輔助後銜接治療"
+  }
+}

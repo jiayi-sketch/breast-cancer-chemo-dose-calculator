@@ -1,11 +1,15 @@
 {
   "name": "breast-cancer-chemo-dose-calculator",
-  "version": "1.0.3",
+  "version": "1.1.0-preview",
   "private": true,
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
-  "workspaces": ["packages/*"],
-  "engines": { "node": ">=24" },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "node --test packages/calculation-core/tests/*.test.mjs",
     "test:ui": "node --test tests/*.test.mjs",
@@ -13,5 +17,8 @@
     "build:web": "node scripts/build-web.mjs",
     "typecheck": "tsc --noEmit --strict --target ES2020 --module ESNext packages/calculation-core/src/index.ts"
   },
-  "devDependencies": { "happy-dom": "20.8.4", "typescript": "5.9.3" }
+  "devDependencies": {
+    "happy-dom": "20.8.4",
+    "typescript": "5.9.3"
+  }
 }

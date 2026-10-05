@@ -24,7 +24,7 @@ def run(*args):
 def copy_web(target):
     target.mkdir(parents=True, exist_ok=True)
     for name in ('index.html', 'catalogue.css', 'catalogue-ui.js', 'catalogue.browser.js',
-                 'catalogue-engine.browser.js', 'translations.browser.js', 'i18n.js', 'manual.html', 'styles.css', 'app.js', 'core.browser.js'):
+                 'catalogue-engine.browser.js', 'reports-engine.browser.js', 'reports-ui.js', 'translations.browser.js', 'i18n.js', 'manual.html', 'styles.css', 'app.js', 'core.browser.js'):
         shutil.copyfile(ROOT / 'apps/shared-web' / name, target / name)
 
 def macos(args):
@@ -51,7 +51,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '7',
+        'CFBundleVersion': '8',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
@@ -100,7 +100,7 @@ def macos_in_stage(args, stage):
         '已恢复内置方案选择：52个方案、7个单药剂量参考及18张指南摘要卡。\n'
         '依据用户提供的2026 CSCO扫描指南录入，每项附PDF页码及书页。\n'
         '先选择方案，再输入参数，由医生或药师核对后计算整套方案。\n'
-        '尚未经独立临床验证；报告匹配未接入，不自动推荐方案或调整剂量。\n'
+        '尚未经独立临床验证；支持离线报告文字识别与目录匹配，不自动推荐治疗或调整剂量。\n'
         '仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\n对应源码与非商业学术授权见随包 LICENSE.txt。\n', encoding='utf-8')
     dmg = args.output / f'ChemoDose-{VERSION}-macos-arm64.dmg'
     # Build HFS+ entirely in userspace, then compress to a normal UDZO disk image.

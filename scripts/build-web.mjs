@@ -25,3 +25,9 @@ writeFileSync(new URL('apps/shared-web/catalogue-engine.browser.js', root),
 const translations = JSON.parse(readFileSync(new URL('data/i18n.json', root), 'utf8'));
 writeFileSync(new URL('apps/shared-web/translations.browser.js', root),
   '/* Generated from data/i18n.json. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ChemoTranslations = ' + JSON.stringify(translations) + ';\n');
+
+const reports = readFileSync(new URL('packages/calculation-core/src/reports.mjs', root), 'utf8')
+  .replace(/^export\s+(const|function)\s/gm,'$1 ');
+writeFileSync(new URL('apps/shared-web/reports-engine.browser.js',root),
+  '/* Generated from reports.mjs. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ReportEngine = (function(){\n"use strict";\n'+reports+
+  '\nreturn {REPORT_VERSION,REPORT_LIMIT,REPORT_SOURCES,REPORT_FIELDS,REPORT_VALUES,VALUE_LABELS,parseReports,suggestReportStage,classifyReport,matchReportCatalogue};\n})();\n');

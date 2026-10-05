@@ -1,0 +1,99 @@
+name: Windows runtime verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-legacy:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.401'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Fetch pinned compilation dependencies
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/legacy-deps | Out-Null
+          Invoke-WebRequest https://api.nuget.org/v3-flatcontainer/jint/2.11.58/jint.2.11.58.nupkg -OutFile build/legacy-deps/jint.zip
+          Invoke-WebRequest https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net40/1.0.3/microsoft.netframework.referenceassemblies.net40.1.0.3.nupkg -OutFile build/legacy-deps/net40.zip
+          Expand-Archive build/legacy-deps/jint.zip build/legacy-deps/jint
+          Expand-Archive build/legacy-deps/net40.zip build/legacy-deps/net40
+          npm install --ignore-scripts --no-audit --no-fund
+      - name: Compile and inspect x86 compatibility EXE
+        shell: pwsh
+        run: |
+          $env:TYPESCRIPT_MODULE = "$PWD/node_modules/typescript/lib/typescript.js"
+          $dotnet = (Get-Command dotnet).Source
+          $jint = "$PWD/build/legacy-deps/jint/lib/net40/Jint.dll"
+          python scripts/build-windows-legacy.py --dotnet $dotnet --references "$PWD/build/legacy-deps/net40/build/.NETFramework/v4.0" --jint $jint --node (Get-Command node).Source --typescript $env:TYPESCRIPT_MODULE --output "$PWD/build/legacy"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build tests/windows-legacy/EngineHarness.csproj "-p:JintPath=$jint" -o build/legacy-host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/verify-windows-legacy-engine.mjs $dotnet "$PWD/build/legacy-host/EngineHarness.dll"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          dotnet build/legacy-host/EngineHarness.dll --inspect "$PWD/build/legacy/ChemoDose-$version-windows-x86-legacy.exe" $PWD $jint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify x86 native UI on hosted Windows
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $report = "$PWD/build/legacy/windows-legacy-self-test.json"
+          $app = Start-Process -FilePath "$PWD/build/legacy/ChemoDose-$version-windows-x86-legacy.exe" -ArgumentList @('--self-test', '--test-report', $report) -PassThru
+          if (-not $app.WaitForExit(120000)) { $app.Kill(); throw 'Legacy self-test timed out.' }
+          if (Test-Path $report) { Get-Content $report }
+          if ($app.ExitCode -ne 0 -or -not (Test-Path $report)) { throw 'Legacy Windows self-test failed.' }
+          if (-not (Get-Content $report | ConvertFrom-Json).passed) { throw 'Legacy Windows self-test failed.' }
+          # A hosted Windows pass does not establish compatibility with XP or Windows 7.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-x86-legacy-verification
+          path: build/legacy/*
+          if-no-files-found: warn
+          retention-days: 30
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.401'
+      - name: Build self-contained Windows application
+        shell: pwsh
+        run: |
+          dotnet publish apps/windows/ChemoDose.Windows.csproj -c Release -r win-x64 --self-contained true -o build/windows -p:ContinuousIntegrationBuild=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify embedded WebView2 application and clipboard
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/verification | Out-Null
+          $report = Join-Path $PWD 'build/verification/windows-self-test.json'
+          $app = Start-Process -FilePath "$PWD/build/windows/ChemoDose.exe" -ArgumentList @('--self-test', '--test-report', $report) -PassThru
+          if (-not $app.WaitForExit(90000)) { $app.Kill(); throw 'Windows application startup test timed out.' }
+          if (Test-Path $report) { Get-Content $report }
+          if ($app.ExitCode -ne 0) { throw "Windows self-test exited with code $($app.ExitCode)." }
+          $result = Get-Content $report | ConvertFrom-Json
+          if (-not $result.passed) { throw 'Windows self-test failed.' }
+      - name: Preserve runtime test record and screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-verification
+          path: |
+            build/verification/*
+            build/windows/ChemoDose.exe
+          if-no-files-found: warn
+          retention-days: 30

@@ -22,7 +22,7 @@ internal sealed class DoseWindow : Form
     private const string Origin = "https://chemodose.invalid";
     private const string Notice = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch";
     private static readonly Assembly AppAssembly = Assembly.GetExecutingAssembly();
-    private static readonly string Version = AppAssembly.GetName().Version!.ToString(3);
+    private static readonly string Version = AppAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
     private readonly WebView2 web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.White };
     private readonly string profilePath = Path.Combine(Path.GetTempPath(), "ChemoDose", Guid.NewGuid().ToString("N"));
     private readonly Dictionary<string, byte[]> assets = new(StringComparer.Ordinal);
@@ -257,6 +257,25 @@ internal sealed class DoseWindow : Form
                 const header=document.querySelector('h1').textContent;
                 languages.push({language:code,cleared,retained,reset,values,header,passed:cleared && retained && reset && JSON.stringify(values)==='[150,450,640,480,840,420]' && document.documentElement.lang===code && (code!=='en'||header==='Breast Cancer Dose Calculator')});
               }
+              const reportChecks=[];
+              for (const code of ['zh-Hans','zh-Hant','en']) {
+                window.ChemoI18n.setLanguage(code);
+                document.getElementById('reports-example-load').click();document.getElementById('reports-analyze').click();
+                for (const [key,value] of [['phase','neo'],['menopause','pre'],['surgery','none'],['nodes','negative']]) {
+                  const element=document.getElementById('report-context-'+key);element.value=value;element.dispatchEvent(new Event('change',{bubbles:true}));
+                }
+                document.getElementById('report-reviewed').checked=true;document.getElementById('reports-match').click();
+                const match=document.querySelector('#report-matches [data-report-entry-id]');if(!match)throw new Error('No report match');match.click();
+                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+                  const element=document.getElementById(id);element.value=value;element.dispatchEvent(new Event('input',{bubbles:true}));
+                }
+                document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
+                const calculation=JSON.parse(document.getElementById('raw-result').textContent);
+                const matched=calculation.reportReview?.subtype==='HER2阳性' && calculation.rows.length===4;
+                const text=document.getElementById('report-ihc');text.value='ER(0%),PR(0%);HER2(0)';text.dispatchEvent(new Event('input',{bubbles:true}));
+                const cleared=document.getElementById('raw-result').textContent==='' && document.getElementById('reports-match').disabled;
+                reportChecks.push({language:code,matched,cleared,passed:matched&&cleared});
+              }
               const chooser=document.getElementById('language');chooser.value='en';chooser.dispatchEvent(new Event('change',{bubbles:true}));
               const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP(Nab-paclitaxel+Carboplatin)'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
@@ -265,7 +284,7 @@ internal sealed class DoseWindow : Form
               const cleared=document.getElementById('raw-result').textContent==='';
               window.scrollTo(0,0);
               return {ready:window.ChemoAppReady,version:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
-                renalMethodRemoved,languages,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
+                renalMethodRemoved,languages,reportChecks,reportReady:window.ChemoReportReady,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
                 count:window.ChemoCatalogue.regimens.filter(r=>r.entryType==='regimen').length,rows:result.rows.length,first,longName:!!long,fits,cleared,
                 notice:document.body.textContent.includes('For academic exchange only. Commercial use is prohibited.') && document.body.textContent.includes('Copyright GitHub @jiayi-sketch')};
             })()
@@ -283,6 +302,7 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
             && r.GetProperty("renalMethodRemoved").GetBoolean()
+            && r.GetProperty("reportReady").GetBoolean() && r.GetProperty("reportChecks").EnumerateArray().All(item=>item.GetProperty("passed").GetBoolean())
             && r.GetProperty("languages").EnumerateArray().All(item=>item.GetProperty("passed").GetBoolean())
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;

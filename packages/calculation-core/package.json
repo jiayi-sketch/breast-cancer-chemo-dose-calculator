@@ -1,6 +1,6 @@
 {
   "name": "@chemo/calculation-core",
-  "version": "1.0.3",
+  "version": "1.1.0-preview",
   "private": true,
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
