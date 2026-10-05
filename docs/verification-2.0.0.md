@@ -20,4 +20,4 @@
 
 验证脚本：`npm test`、`npm run test:ui`、`npm run test:ocr`、`npm run typecheck`，以及 `scripts/verify-windows-legacy-engine.mjs`。Windows `--self-test --test-report` 使用虚构数据。原文与截图不写患者日志；反馈只使用虚构资料。
 
-Windows 原生测试：[GitHub Actions 37315259745](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37315259745)，代码提交 `d1cba9dadd7e314683a34b54ba75531bb4997e40`，2026-10-05。使用 Windows 托管测试环境，不等于所有 Win10/11 设备或旧 Windows 兼容版验收。发布附件保留该次虚构数据测试 JSON 和 OCR 弹窗截图。修复了 Windows 构建中内嵌 OCR 子目录的路径分隔符问题。
+Windows 原生测试：[GitHub Actions 37316529674](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37316529674)，代码提交 `65921e3a317326a9b5fd9ed1608a51b4a2df18aa`，2026-10-05。使用 Windows 托管测试环境，不等于所有 Win10/11 设备或旧 Windows 兼容版验收。发布附件保留该次虚构数据测试 JSON 和 OCR 弹窗截图。修复了 Windows 构建中内嵌 OCR 子目录的路径分隔符问题。
