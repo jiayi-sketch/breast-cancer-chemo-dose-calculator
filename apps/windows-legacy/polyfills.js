@@ -44,6 +44,8 @@ function legacyCall(request) {
     case 'catalogue': return window.ChemoCatalogue;
     case 'translate': return translateText(request.text,request.language);
     case 'parse': return window.ReportEngine.parseReports(request.sources);
+    case 'classify': return window.ReportEngine.classifyReport(request.values);
+    case 'checks': return window.ReportEngine.guidelineChecks(request.subtype,request.phase);
     case 'match': return window.ReportEngine.matchReportCatalogue(request.parsed,request.values,request.context,window.ChemoCatalogue);
     case 'dose': return window.RegimenEngine.calculateRegimen(window.ChemoCatalogue,request.id,request.inputs,request.acknowledgement);
     case 'quantity': return window.RegimenEngine.quantityLabel(request.result);

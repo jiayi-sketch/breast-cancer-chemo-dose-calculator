@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; connect-src 'self'; worker-src 'self'">
   <title>乳腺癌剂量计算 · 内置方案</title>
   <link rel="stylesheet" href="catalogue.css">
   <script defer src="core.browser.js"></script>
@@ -14,11 +14,13 @@
   <script defer src="catalogue-ui.js"></script>
   <script defer src="reports-engine.browser.js"></script>
   <script defer src="reports-ui.js"></script>
+  <script defer src="ocr/tesseract.min.js"></script>
+  <script defer src="report-import.js"></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">＋</span><div><h1>乳腺癌剂量计算</h1><p>2026 CSCO · 内置方案与剂量核对</p></div></div>
-    <div class="header-actions"><label class="language-control">语言<select id="language" aria-label="语言"><option value="zh-Hans">简体中文</option><option value="zh-Hant">繁體中文</option><option value="en">English</option></select></label><button id="about-open" class="quiet">版本与依据 <span>1.1.0-preview</span></button></div>
+    <div class="header-actions"><label class="language-control">语言<select id="language" aria-label="语言"><option value="zh-Hans">简体中文</option><option value="zh-Hant">繁體中文</option><option value="en">English</option></select></label><button id="about-open" class="quiet">版本与依据 <span>2.0.0</span></button></div>
   </header>
   <div class="usage-notice"><span>仅限于学术交流，严禁商业用途</span><span>版权所有 GitHub @jiayi-sketch</span></div>
   <div class="workspace">
@@ -31,11 +33,16 @@
     <main>
       <section id="report-workspace" aria-labelledby="report-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">报告 → 核对 → 方案目录</p><h2 id="report-title">报告识别与病理匹配</h2></div><button id="reports-close">返回方案库</button></div>
-        <p class="hint">粘贴同一患者、同一病灶及同一取材时点的报告文字。识别在本机完成，不上传、不保存原文；照片和扫描件请先转成文字。</p>
+        <p class="hint">粘贴同一患者、同一病灶及同一取材时点的报告文字，或导入截图。识别在本机完成，不上传、不保存原文。</p>
         <div class="report-layout">
           <section class="report-card" aria-labelledby="report-input-title">
             <h3 id="report-input-title">1 · 粘贴报告</h3>
             <div id="report-source-tabs" class="report-tabs" role="group" aria-label="报告来源"></div>
+            <div class="actions"><button id="report-import-image">导入截图 / 图片</button><button id="report-import-clipboard">从剪贴板导入</button></div>
+            <input id="report-image-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+            <label class="check"><input id="report-clipboard-watch" type="checkbox">本次窗口返回前台时自动导入新的病理剪贴板内容</label>
+            <p class="hint">先选择报告来源。Mac 可用 Shift+Command+Control+4 将截图放入剪贴板；Windows 可用 Win+Shift+S；安卓可截图后从图片中导入。OCR 后必须对照原图核对，不能按识别置信度确认受体结果。</p>
+            <p id="report-import-status" role="status" aria-live="polite"></p>
             <div id="report-editors"></div>
             <div class="actions"><button id="reports-analyze" class="primary">识别报告</button><button id="reports-clear">清空全部报告</button></div>
             <label class="report-example">虚拟示例<select id="report-example"><option value="her2">HER2 2+ / ISH 阳性</option><option value="tnbc">三阴性</option><option value="pending">HER2 2+ / ISH 待出</option></select></label>
@@ -104,6 +111,7 @@
       </div>
     </main>
   </div>
-  <dialog id="about-dialog"><h2>内置方案版 1.1.0-preview</h2><p>52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡。覆盖原程序四个栏目；不代表指南全书数据库。</p><p>依据：用户提供的《2026 CSCO乳腺癌诊疗指南》，共 258 页。每项标注 PDF 页序与书页，目录版本 2026.10.02。</p><p>数值显示保留两位小数，内部计算不提前取整。报告文字匹配仅检索目录，不判断患者适用性、临床减量或累计剂量上限。</p><p>离线运行，无账户与上传。参数仅保存在本次窗口内存；复制操作会写入系统剪贴板。</p><p>仅限于学术交流，严禁商业用途<br>版权所有 GitHub @jiayi-sketch</p><p>源码公开测试版，适用非商业学术授权。目录录入核对不等于独立临床验证。</p><button id="about-close" class="primary">返回方案库</button></dialog>
+  <dialog id="report-import-dialog" aria-labelledby="report-import-title"><h2 id="report-import-title">病理识别与药物目录</h2><p>识别后自动展示目录候选。先核对原文与治疗条件，再选择方案核对剂量。</p><div class="actions"><button id="report-import-review" class="primary">核对报告与治疗阶段</button><button id="report-import-close">关闭</button></div><div id="report-import-preview" data-no-translate></div></dialog>
+  <dialog id="about-dialog"><h2>内置方案版 2.0.0</h2><p>52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡。覆盖原程序四个栏目；不代表指南全书数据库。</p><p>依据：用户提供的《2026 CSCO乳腺癌诊疗指南》，共 258 页。每项标注 PDF 页序与书页，目录版本 2026.10.02。</p><p>数值显示保留两位小数，内部计算不提前取整。报告文字匹配仅检索目录，不判断患者适用性、临床减量或累计剂量上限。</p><p>离线运行，无账户与上传。参数仅保存在本次窗口内存；复制操作会写入系统剪贴板。</p><p>仅限于学术交流，严禁商业用途<br>版权所有 GitHub @jiayi-sketch</p><p>源码公开测试版，适用非商业学术授权。目录录入核对不等于独立临床验证。</p><button id="about-close" class="primary">返回方案库</button></dialog>
 </body>
 </html>

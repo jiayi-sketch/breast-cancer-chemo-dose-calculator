@@ -23,6 +23,7 @@
   function context() {return {...Object.fromEntries(Object.keys(contextOptions).map(k=>[k,el('report-context-'+k).value])),reviewed:el('report-reviewed').checked,specialReviewed:el('report-special-reviewed').checked,correctionReason:el('report-correction-reason').value};}
   function status(text) {el('report-status').textContent=t(text);}
   function clearMatches() {
+    closeDialog();
     matched=null;window.ChemoReportReview=null;
     el('report-matches').replaceChildren();el('report-result').replaceChildren();
     el('report-result').append(node('p','资料已变更，请重新核对后匹配。','hint'));
@@ -30,6 +31,7 @@
     window.ChemoCatalogueUI.invalidate();
   }
   function invalidateReports() {
+    window.ChemoImport?.cancel();
     parsed=null;clearMatches();el('reports-match').disabled=true;
     fields.forEach(k=>{el('report-field-'+k).value='unknown';});
     Object.keys(contextOptions).forEach(k=>{el('report-context-'+k).value='';});
@@ -39,7 +41,7 @@
     Object.keys(E.REPORT_SOURCES).forEach(k=>{el('report-tab-'+k).textContent=t(E.REPORT_SOURCES[k])+(el('report-'+k).value.trim()?' ●':'');});
   }
   function selectSource(k) {
-    activeSource=k;
+    if(activeSource!==k)window.ChemoImport?.cancel();activeSource=k;
     Object.keys(E.REPORT_SOURCES).forEach(key=>{el('report-editor-'+key).hidden=key!==k;el('report-tab-'+key).setAttribute('aria-pressed',String(key===k));});
   }
   function makeSelect(parent,id,title,options) {
@@ -75,15 +77,17 @@
       el('report-evidence').append(row);
     }
   }
-  el('reports-analyze').addEventListener('click',()=>{
+  function analyze(open=false) {
     invalidateReports();
     try {
       parsed=E.parseReports(sources());
       fields.forEach(k=>{el('report-field-'+k).value=parsed.fields[k].value;});
       renderEvidence();el('reports-match').disabled=false;
       status('已识别，请核对原文、修正结果并补充治疗阶段。');
+      if(open)previewDialog();
     } catch (error) {status(error.message);}
-  });
+  }
+  el('reports-analyze').addEventListener('click',()=>analyze(true));
   el('reports-clear').addEventListener('click',()=>{
     Object.keys(E.REPORT_SOURCES).forEach(k=>{el('report-'+k).value='';});
     invalidateReports();el('clear-patient').click();status('报告、核对信息和计算参数已清空。');selectSource('biopsy');
@@ -107,9 +111,11 @@
     for (const entry of [...matched.matches,...matched.references]) {
       const card=node('div','','report-match-card');
       card.append(node('strong',entry.name),node('p',window.RegimenEngine.sourceLabel(entry),'hint'));
+      addDrugs(card,entry);
       const button=node('button',entry.drugs?'查看方案并核对剂量':'查看指南摘要');button.dataset.reportEntryId=entry.id;
       button.addEventListener('click',()=>{
         if (matched!==currentMatch || !el('report-reviewed').checked) return;
+        closeDialog();
         if (window.ChemoCatalogueUI.openEntry(entry.id)) {
           window.ChemoReportReview={version:E.REPORT_VERSION,catalogueVersion:cat.version,subtype:currentMatch.subtype,
             fields:{...facts},phase:ctx.phase,correctedFields:[...currentMatch.corrected],correctionReason:ctx.correctionReason,
@@ -118,6 +124,7 @@
       });
       card.append(button);el('report-matches').append(card);
     }
+    previewDialog(true);
   });
   el('reports-open').addEventListener('click',()=>{
     el('report-workspace').hidden=false;el('catalogue-workspace').hidden=true;
@@ -143,6 +150,52 @@
     renderEvidence();clearMatches();el('report-stage-hint').textContent=t(E.suggestReportStage(sources()));
     status('语言已切换，请重新核对后匹配。');
   });
+
+  function closeDialog() {const d=el('report-import-dialog');if(!d)return;if(d.open&&d.close)d.close();else d.removeAttribute('open');}
+  function addDrugs(parent,entry) {
+    if(entry.drugs){const list=node('ul');for(const drug of entry.drugs){list.append(node('li',[drug.phaseLabel,drug.name,window.RegimenEngine.standardDose(drug),drug.schedule,drug.duration,window.RegimenEngine.sourceLabel(drug)].filter(Boolean).map(t).join(' · ')));}parent.append(list);}
+    else if(entry.body)parent.append(node('p',entry.body,'hint'));
+  }
+  function previewDialog(reviewed=false) {
+    if(!parsed)return;
+    const box=el('report-import-preview');box.replaceChildren();
+    const classification=E.classifyReport(values());
+    box.append(node('p','目录候选，尚需核对治疗指征；以下不是处方。','report-error'));
+    box.append(node('p',fields.map(k=>titles[k]+': '+labelValue(values()[k])).join(' · ')));
+    for(const issue of [...classification.issues,...classification.notes])box.append(node('p',issue,'report-error'));
+    box.append(node('p','需核对：治疗阶段、肿瘤大小、淋巴结、既往治疗、禁忌证及器官功能。新辅助后还需核对 pCR、残留病灶和 BRCA 等条件。','hint'));
+    if(reviewed && matched?.status==='ok') {
+      for(const entry of [...matched.matches,...matched.references]){
+        const card=node('section','','report-match-card');card.append(node('strong',entry.name),node('p',window.RegimenEngine.sourceLabel(entry),'hint'));addDrugs(card,entry);
+        const b=node('button',entry.drugs?'查看方案并核对剂量':'查看指南摘要');
+        b.addEventListener('click',()=>{const original=[...el('report-matches').querySelectorAll('button')].find(b=>b.dataset.reportEntryId===entry.id);closeDialog();original?.click();});card.append(b);box.append(card);
+      }
+    } else if(classification.subtype){
+      box.append(node('strong','目录分型：'+classification.subtype));
+      const phase=el('report-context-phase').value;
+      for(const check of E.guidelineChecks(classification.subtype,phase))box.append(node('p',check,'hint'));
+      if(phase==='post-neo'){
+        const ids=classification.subtype==='HER2阳性'?['c003']:classification.subtype==='三阴性'?['c004']:['c018','c010','c012'];
+        for(const card of cat.referenceCards.filter(c=>ids.includes(c.id))){const section=node('section','','report-match-card');section.append(node('strong',card.name),node('p',window.RegimenEngine.sourceLabel(card),'hint'));addDrugs(section,card);box.append(section);}
+      } else {
+        box.append(node('p',phase?'请在核对区补充适用条件后匹配。':'治疗阶段尚未确认；下列按术前、术后分别展示目录，请先核对阶段。','hint'));
+        const section=phase==='neo'?'术前新辅助治疗':phase==='adjuvant'?'术后辅助治疗':null;
+        for(const entry of cat.regimens.filter(c=>c.entryType==='regimen'&&c.subtype===classification.subtype&&(!section||c.section===section))){
+          const card=node('section','','report-match-card');card.append(node('strong',entry.section+' / '+entry.name),node('p',window.RegimenEngine.sourceLabel(entry),'hint'));addDrugs(card,entry);box.append(card);
+        }
+      }
+    }
+    const d=el('report-import-dialog');if(!d.open){if(d.showModal)d.showModal();else d.setAttribute('open','');}
+  }
+  el('report-import-close').addEventListener('click',closeDialog);
+  el('report-import-review').addEventListener('click',()=>{closeDialog();el('reports-open').click();el('report-context-phase').focus();});
+  window.ChemoReportUI={get source(){return activeSource;},prepareImport:invalidateReports,
+    importText(text,source,ocr=false){
+      if(!Object.hasOwn(E.REPORT_SOURCES,source)||typeof text!=='string'||text.length>E.REPORT_LIMIT)return;
+      // Replacing one source is explicit; do not join different reports silently.
+      el('report-'+source).value=text;invalidateReports();selectSource(source);el('reports-open').click();analyze(true);
+    }};
+
   selectSource(activeSource);invalidateReports();status('请分别粘贴报告文字，或载入虚拟示例。');
   window.ChemoReportReady=true;
 }());

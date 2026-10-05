@@ -4,7 +4,7 @@ window.DoseCore = (function(){
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Arithmetic migration prototype. No network, storage, UI or treatment selection.
 
-const ENGINE_VERSION = '1.1.0-preview';
+const ENGINE_VERSION = '2.0.0';
 
 const LEGACY_INPUT_LIMITS = Object.freeze({
   heightCm: Object.freeze([80, 250]         ),

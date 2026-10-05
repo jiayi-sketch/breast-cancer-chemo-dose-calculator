@@ -30,4 +30,4 @@ const reports = readFileSync(new URL('packages/calculation-core/src/reports.mjs'
   .replace(/^export\s+(const|function)\s/gm,'$1 ');
 writeFileSync(new URL('apps/shared-web/reports-engine.browser.js',root),
   '/* Generated from reports.mjs. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ReportEngine = (function(){\n"use strict";\n'+reports+
-  '\nreturn {REPORT_VERSION,REPORT_LIMIT,REPORT_SOURCES,REPORT_FIELDS,REPORT_VALUES,VALUE_LABELS,parseReports,suggestReportStage,classifyReport,matchReportCatalogue};\n})();\n');
+  '\nreturn {REPORT_VERSION,REPORT_LIMIT,REPORT_SOURCES,REPORT_FIELDS,REPORT_VALUES,VALUE_LABELS,parseReports,suggestReportStage,classifyReport,guidelineChecks,matchReportCatalogue};\n})();\n');

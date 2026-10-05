@@ -9,9 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
-[assembly: AssemblyInformationalVersion("1.1.0-preview")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
+[assembly: AssemblyInformationalVersion("2.0.0")]
 [assembly: AssemblyCopyright("版权所有 GitHub @jiayi-sketch；仅限于学术交流，严禁商业用途。")]
 namespace ChemoDose.Legacy {
  static class Program {
@@ -36,7 +36,7 @@ namespace ChemoDose.Legacy {
   public override string ToString(){return Label;}
  }
  sealed class LegacyWindow : Form {
-  const string Version="1.1.0-preview";
+  const string Version="2.0.0";
   readonly JavaScriptSerializer json=new JavaScriptSerializer {MaxJsonLength=2000000};
   readonly EngineBridge bridge=new EngineBridge(EngineBridge.Resource("engine.js"));
   readonly Dictionary<Control,string> labels=new Dictionary<Control,string>();
@@ -51,6 +51,9 @@ namespace ChemoDose.Legacy {
   readonly ListBox entries=new ListBox {HorizontalScrollbar=true}, matches=new ListBox {HorizontalScrollbar=true};
   readonly FlowLayoutPanel alternativesPanel=new FlowLayoutPanel {Dock=DockStyle.Fill,AutoSize=true,WrapContents=true};
   readonly TabControl tabs=new TabControl {Dock=DockStyle.Fill};
+  readonly TabControl sourceTabs=new TabControl {Dock=DockStyle.Fill,Height=160};
+  readonly CheckBox clipboardWatch=new CheckBox {AutoSize=true};
+  string lastClipboard="";
   readonly Button copy=new Button();
   readonly Dictionary<string,object> catalogue;
   readonly object[] allEntries;
@@ -108,6 +111,7 @@ namespace ChemoDose.Legacy {
    string pref=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ChemoDose","legacy-language.txt");
    if(!args.Contains("--self-test"))try{if(File.Exists(pref)&&new FileInfo(pref).Length<30){string saved=File.ReadAllText(pref).Trim();for(int i=0;i<language.Items.Count;i++)if(((Choice)language.Items[i]).Key==saved)language.SelectedIndex=i;}}catch(IOException){}catch(UnauthorizedAccessException){}
    ChangeLanguage();Shown+=(s,e)=>{if(args.Contains("--self-test"))BeginInvoke(new Action(SelfTest));};
+   Activated+=(s,e)=>{if(clipboardWatch.Checked&&!args.Contains("--self-test"))Guard(()=>ImportClipboard(true));};
   }
   void BuildCatalogue() {
    var tab=(TabPage)Labelled(new TabPage(),"内置方案");tabs.TabPages.Add(tab);var table=Table();tab.Controls.Add(table);
@@ -118,15 +122,16 @@ namespace ChemoDose.Legacy {
    var inputs=Flow();Input(inputs,"身高（cm）",height,65);Input(inputs,"体重（kg）",weight,65);Input(inputs,"肾功能（mL/min）",renal,65);Input(inputs,"本次核对人",reviewer,125);Row(table,inputs,false);
    Labelled(renalConfirmed,"请确认肾功能参数的单位和适用性。");renalConfirmed.AutoSize=true;renalConfirmed.CheckedChanged+=(s,e)=>InvalidateDose();Row(table,renalConfirmed,false);
    Row(table,alternativesPanel,false);Labelled(confirmed,"请先核对所选方案、分阶段用药及本次参数，然后勾选确认。");confirmed.AutoSize=true;confirmed.CheckedChanged+=(s,e)=>{summary=null;output.Clear();copy.Enabled=false;};Row(table,confirmed,false);
-   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(s,e)=>Guard(()=>{if(summary!=null)Clipboard.SetText(summary);});actions.Controls.Add(copy);Row(table,actions,false);
+   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(s,e)=>Guard(()=>{if(summary!=null){Clipboard.SetText(summary);lastClipboard=summary;}});actions.Controls.Add(copy);Row(table,actions,false);
    output.MinimumSize=new Size(0,135);Row(table,output,false);
   }
   void BuildReports() {
    var tab=(TabPage)Labelled(new TabPage(),"报告识别与病理匹配");tabs.TabPages.Add(tab);var table=Table();tab.Controls.Add(table);
-   Row(table,Label("仅识别粘贴的报告文字，不含照片或扫描 PDF 的 OCR。"),false);
-   var sourceTabs=new TabControl {Dock=DockStyle.Fill,Height=160};string[] titles={"穿刺/术前病理","术后大病理","免疫组化","HER2 FISH/ISH"};
+   Row(table,Label("此 x86 兼容版支持剪贴板文字与药物目录弹窗；截图 OCR 请使用新版 Windows、Mac 或安卓版本。"),false);
+   var imports=Flow();imports.Controls.Add(Button("从剪贴板导入",()=>ImportClipboard(false)));Labelled(clipboardWatch,"本次窗口返回前台时自动导入新的病理剪贴板内容");imports.Controls.Add(clipboardWatch);Row(table,imports,false);
+   string[] titles={"穿刺/术前病理","术后大病理","免疫组化","HER2 FISH/ISH"};
    for(int i=0;i<sourceKeys.Length;i++){var page=(TabPage)Labelled(new TabPage(),titles[i]);var box=Area(false);reports[sourceKeys[i]]=box;box.TextChanged+=(s,e)=>ReportsChanged();page.Controls.Add(box);sourceTabs.TabPages.Add(page);}Row(table,sourceTabs,false);
-   Row(table,Button("识别报告",Parse),false);var values=Flow();foreach(string k in fieldKeys){values.Controls.Add(Label(k));var combo=new ComboBox();fields[k]=combo;values.Controls.Add(combo);combo.SelectedIndexChanged+=(s,e)=>{if(!updating)InvalidateMatch();};}Row(table,values,false);
+   Row(table,Button("识别报告",()=>{Parse();Preview(false);}),false);var values=Flow();foreach(string k in fieldKeys){values.Controls.Add(Label(k));var combo=new ComboBox();fields[k]=combo;values.Controls.Add(combo);combo.SelectedIndexChanged+=(s,e)=>{if(!updating)InvalidateMatch();};}Row(table,values,false);
    evidence.Height=110;Row(table,evidence,false);var contexts=Flow();contexts.Controls.Add(Label("治疗阶段"));contexts.Controls.Add(phase);contexts.Controls.Add(Label("绝经状态"));contexts.Controls.Add(menopause);contexts.Controls.Add(Label("已完成术式"));contexts.Controls.Add(surgery);contexts.Controls.Add(Label("淋巴结状态"));contexts.Controls.Add(nodes);Row(table,contexts,false);
    foreach(var c in new[]{phase,menopause,surgery,nodes})c.SelectedIndexChanged+=(s,e)=>{if(!updating)InvalidateMatch();};
    var reason=Flow();Input(reason,"人工修正依据",correction,420);correction.TextChanged+=(s,e)=>{if(!updating)InvalidateMatch();};Row(table,reason,false);
@@ -195,6 +200,32 @@ namespace ChemoDose.Legacy {
    if(S(result,"status")!="ok")throw new Exception(String.Join("\r\n",A(result["issues"]).Select(o=>T(Convert.ToString(o))).ToArray()));
    lastMatch=result;foreach(var o in A(result["matches"]).Concat(A(result["references"]))) {var r=D(o);matches.Items.Add(new Choice(S(r,"id"),T(S(r,"name"))));}
    evidence.Text+="\r\n\r\n"+T(S(result,"subtype"))+"\r\n"+String.Join("\r\n",A(result["notes"]).Select(o=>T(Convert.ToString(o))).ToArray());
+   if(!args.Contains("--self-test"))Preview(true);
+  }
+  void ImportClipboard(bool automatic) {
+   if(!Clipboard.ContainsText())return;string text=Clipboard.GetText();
+   if(automatic&&(text==lastClipboard||!System.Text.RegularExpressions.Regex.IsMatch(text,@"\b(?:ER|PR|HER[ -]?2|Ki[ -]?67)\b|乳腺|病理|免疫组化|免疫組化",System.Text.RegularExpressions.RegexOptions.IgnoreCase)))return;
+   if(text.Length>40000)throw new Exception(T("相关报告合计最多40000字，请缩短后重试。"));lastClipboard=text;
+   reports[sourceKeys[Math.Max(0,sourceTabs.SelectedIndex)]].Text=text;tabs.SelectedIndex=1;Parse();Preview(false);
+  }
+  void Preview(bool reviewed) {
+   if(parsed==null)return;
+   var classification=D(Call(new {op="classify",values=fields.ToDictionary(p=>p.Key,p=>(object)Key(p.Value))}));
+   var lines=new List<string>{T("目录候选，尚需核对治疗指征；以下不是处方。")};
+   foreach(var issue in A(classification["issues"]).Concat(A(classification["notes"])))lines.Add(T(Convert.ToString(issue)));
+   string subtypeValue=S(classification,"subtype");
+   if(subtypeValue!="") {
+    lines.Add(T(subtypeValue));foreach(var check in A(Call(new {op="checks",subtype=subtypeValue,phase=Key(phase)})))lines.Add(T(Convert.ToString(check)));
+    IEnumerable<object> candidates;
+    if(reviewed&&lastMatch!=null)candidates=A(lastMatch["matches"]).Concat(A(lastMatch["references"]));
+    else if(Key(phase)=="post-neo")candidates=allEntries.Where(o=>(subtypeValue=="HER2阳性"?new[]{"c003"}:subtypeValue=="三阴性"?new[]{"c004"}:new[]{"c018","c010","c012"}).Contains(S(D(o),"id")));
+    else candidates=allEntries.Where(o=>S(D(o),"subtype")==subtypeValue&&S(D(o),"entryType")=="regimen"&&(Key(phase)==""||S(D(o),"section")== (Key(phase)=="neo"?"术前新辅助治疗":"术后辅助治疗")));
+    foreach(var o in candidates){var entry=D(o);lines.Add(T(S(entry,"section")+" / "+S(entry,"name"))+"\r\n"+Source(entry));if(entry.ContainsKey("drugs"))foreach(var row in A(entry["drugs"])){var drug=D(row);lines.Add(T(S(drug,"phaseLabel"))+" · "+T(S(drug,"name"))+" · "+T((string)Call(new {op="standard",drug=drug}))+" · "+T(S(drug,"schedule"))+" · "+T(S(drug,"duration"))+" · "+Source(drug));}else lines.Add(T(S(entry,"body")));}
+   }
+   using(var dialog=new Form {Text=T("病理识别与药物目录"),Size=new Size(800,600),StartPosition=FormStartPosition.CenterParent}) {
+    var text=Area(true);text.Text=String.Join("\r\n\r\n",lines.ToArray());dialog.Controls.Add(text);
+    var close=Button("核对报告与治疗阶段",()=>dialog.Close());close.Dock=DockStyle.Bottom;dialog.Controls.Add(close);dialog.ShowDialog(this);
+   }
   }
   void ClearCase() {
    updating=true;foreach(var box in reports.Values)box.Clear();foreach(var box in new[]{height,weight,renal,reviewer,correction})box.Clear();parsed=null;evidence.Clear();foreach(var c in fields.Values)c.SelectedIndex=0;foreach(var c in new[]{phase,menopause,surgery,nodes})c.SelectedIndex=0;foreach(var c in alternatives.Values)c.SelectedIndex=0;renalConfirmed.Checked=false;confirmed.Checked=false;updating=false;InvalidateMatch();

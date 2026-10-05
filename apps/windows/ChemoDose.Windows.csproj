@@ -7,9 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>ChemoDose</AssemblyName>
-    <Version>1.1.0-preview</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
     <Product>乳腺癌剂量计算</Product>
     <Copyright>版权所有 GitHub @jiayi-sketch；仅限于学术交流，严禁商业用途。</Copyright>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -23,7 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
-    <EmbeddedResource Include="../shared-web/*" LogicalName="web/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../shared-web/**/*" LogicalName="web/%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../LICENSE" LogicalName="LICENSE.txt" />
     <EmbeddedResource Include="licenses/*" LogicalName="licenses/%(Filename)%(Extension)" />
   </ItemGroup>

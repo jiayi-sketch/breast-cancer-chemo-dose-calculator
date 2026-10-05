@@ -22,10 +22,9 @@ def run(*args):
     subprocess.run([str(a) for a in args], check=True, cwd=ROOT)
 
 def copy_web(target):
+    if target.exists(): shutil.rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
-    for name in ('index.html', 'catalogue.css', 'catalogue-ui.js', 'catalogue.browser.js',
-                 'catalogue-engine.browser.js', 'reports-engine.browser.js', 'reports-ui.js', 'translations.browser.js', 'i18n.js', 'manual.html', 'styles.css', 'app.js', 'core.browser.js'):
-        shutil.copyfile(ROOT / 'apps/shared-web' / name, target / name)
+    shutil.copytree(ROOT / 'apps/shared-web', target, dirs_exist_ok=True)
 
 def macos(args):
     # Keep the signed bundle outside cloud-synced folders, where File Provider
@@ -51,7 +50,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '8',
+        'CFBundleVersion': '9',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
@@ -62,7 +61,7 @@ def macos_in_stage(args, stage):
     cache = build / 'module-cache'
     cache.mkdir(exist_ok=True)
     run('xcrun', 'swiftc', '-O', '-target', 'arm64-apple-macos13.0',
-        '-module-cache-path', cache, '-framework', 'Cocoa', '-framework', 'WebKit',
+        '-module-cache-path', cache, '-framework', 'Cocoa', '-framework', 'WebKit', '-framework', 'Vision', '-framework', 'ImageIO',
         ROOT / 'apps/macos/main.swift', '-o', binary)
     icon_tool = build / 'draw-icon'
     run('xcrun', 'swiftc', '-module-cache-path', cache,

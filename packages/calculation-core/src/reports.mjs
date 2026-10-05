@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Offline text extraction and catalogue retrieval, not diagnosis or treatment selection.
-export const REPORT_VERSION = '1.1.0-preview';
+export const REPORT_VERSION = '2.0.0';
 export const REPORT_LIMIT = 40000;
 export const REPORT_SOURCES = {biopsy:'穿刺/术前病理', postop:'术后大病理', ihc:'免疫组化', fish:'HER2 FISH/ISH'};
 export const REPORT_FIELDS = ['ER','PR','IHC','ISH','KI67'];
@@ -134,6 +134,29 @@ export function classifyReport(values) {
   if (values.ER==='negative' && values.PR==='positive') notes.push('ER 阴性 / PR 阳性为不常见组合，请完成专项复核。');
   return {subtype:issues.length ? null : her2==='positive' ? 'HER2阳性' : values.ER==='negative' && values.PR==='negative' ? '三阴性' : '激素受体阳性',her2,issues:[...new Set(issues)],notes};
 }
+// Source-backed reminders, not eligibility rules or patient-specific treatment advice.
+export function guidelineChecks(subtype, phase) {
+  const common='方案选择须结合完整分期、治疗目标、既往治疗与器官功能；仅凭免疫组化不能判断适用性。';
+  const checks={
+    'HER2阳性':{
+      neo:'新辅助：核对抗 HER2 治疗条件及推荐层级。TCbHP、THP×6 与其他方案的层级不同，不按识别结果自动排序。PDF 48 / 书页 31。',
+      adjuvant:'直接手术后：核对腋窝淋巴结、肿瘤是否 >2 cm、ER 与 Ki-67 风险条件；不同分层的单靶/双靶和化疗方案不可混用。PDF 68 / 书页 51。',
+      'post-neo':'新辅助后：核对既往抗 HER2 治疗与 pCR/残留病灶，阅读术后衔接摘要，不重新套用初始辅助化疗。PDF 54 / 书页 37。'
+    },
+    '三阴性':{
+      neo:'新辅助：核对紫杉、蒽环、铂类及免疫治疗的适用条件、序贯阶段和安全性。PD-L1 CPS 不作为本工具自动选择免疫药物的规则。PDF 56–60 / 书页 39–43。',
+      adjuvant:'直接手术后：核对分期、复发风险和化疗指征；BRCA1/2 与强化治疗另行核对，不能由三阴性标签直接决定用药。PDF 75、78 / 书页 58、61。',
+      'post-neo':'新辅助后：核对是否达到 pCR、是否已用 PD-1 抑制剂、残留病灶和 BRCA1/2 条件；卡培他滨/奥拉帕利不能仅凭受体阴性自动选择。PDF 62 / 书页 45。'
+    },
+    '激素受体阳性':{
+      neo:'新辅助：核对化疗指征；AT/TAC 与 AC-T 的推荐层级不同。剂量和注释应交叉阅读三阴性新辅助章节。PDF 63、57、58 / 书页 46、40、41。',
+      adjuvant:'直接手术后：核对阳性淋巴结数量及其他高危因素、肿瘤 >2 cm、年龄与 Ki-67，按源页分层核对化疗；绝经和内分泌治疗另行核对。PDF 83、86 / 书页 66、69。',
+      'post-neo':'新辅助后：核对残留风险、绝经状态、既往化疗、内分泌与强化治疗条件；不自动给出初始辅助化疗方案。PDF 78、83、86–91 / 书页 61、66、69–74。'
+    }
+  };
+  const selected=checks[subtype];
+  return [common,...(selected ? phase && selected[phase] ? [selected[phase]] : Object.keys(selected).map(k=>selected[k]) : [])];
+}
 export function matchReportCatalogue(parsed, values, context, catalogue) {
   const result={...classifyReport(values),status:'needs-review',matches:[],references:[],corrected:[],catalogueOnly:true};
   if (!parsed?.fields) result.issues.push('请先识别当前报告。');
@@ -150,6 +173,7 @@ export function matchReportCatalogue(parsed, values, context, catalogue) {
   if (context.phase==='neo' && context.surgery!=='none' || ['adjuvant','post-neo'].includes(context.phase) && !['mastectomy','radical','conserving'].includes(context.surgery)) result.issues.push('已完成术式与治疗阶段不一致，请核实。');
   if (result.notes.length && context.specialReviewed!==true) result.issues.push('低表达或不常见受体组合需要专项复核确认。');
   result.notes.push('仅按已核对的阶段和受体分型检索目录，不判断治疗指征、风险或患者适用性。');
+  result.notes.push(...guidelineChecks(result.subtype,context.phase));
   if (result.issues.length) return result;
   if (context.phase==='post-neo') {
     result.notes.push('新辅助后不匹配整套初始辅助化疗，请结合既往用药和残留病灶核对衔接治疗。');

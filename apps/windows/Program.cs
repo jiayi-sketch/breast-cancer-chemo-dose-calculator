@@ -33,6 +33,7 @@ internal sealed class DoseWindow : Form
     private string language = "zh-Hans";
     private readonly string preferencePath;
     private bool finishedTest;
+    private string lastClipboard = "";
     private static bool SupportedLanguage(string? value) => value is "zh-Hans" or "zh-Hant" or "en";
     private string Localized(string source) {
         var translations = new Dictionary<string, (string Traditional, string English)> {
@@ -104,6 +105,7 @@ internal sealed class DoseWindow : Form
             testTimeout.Start();
         }
         Shown += async (_, _) => await InitializeWeb();
+        Activated += async (_, _) => { if (web.CoreWebView2 is not null) await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImport?.foreground()"); };
         FormClosed += (_, _) => { testTimeout.Dispose(); web.Dispose(); };
     }
 
@@ -186,8 +188,10 @@ internal sealed class DoseWindow : Form
         byte[]? bytes = null;
         if (local) assets.TryGetValue(uri!.AbsolutePath, out bytes);
         string mime = uri?.AbsolutePath.EndsWith(".html") == true ? "text/html"
-            : uri?.AbsolutePath.EndsWith(".css") == true ? "text/css" : "text/javascript";
-        const string policy = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+            : uri?.AbsolutePath.EndsWith(".css") == true ? "text/css"
+            : uri?.AbsolutePath.EndsWith(".wasm") == true ? "application/wasm"
+            : uri?.AbsolutePath.EndsWith(".js") == true ? "text/javascript" : "application/octet-stream";
+        const string policy = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
         e.Response = environment!.CreateWebResourceResponse(new MemoryStream(bytes ?? []),
             bytes is null ? 403 : 200, bytes is null ? "Forbidden" : "OK",
             $"Content-Type: {mime}; charset=utf-8\r\nCache-Control: no-store\r\nContent-Security-Policy: {policy}\r\nX-Content-Type-Options: nosniff");
@@ -201,6 +205,7 @@ internal sealed class DoseWindow : Form
         {
             using JsonDocument message = JsonDocument.Parse(e.WebMessageAsJson);
             JsonElement root = message.RootElement;
+            if (root.GetProperty("type").GetString() == "reportImport") { ImportReport(root); return; }
             if (root.GetProperty("type").GetString() == "languagePreference") {
                 string? saved = root.GetProperty("language").GetString();
                 if (!SupportedLanguage(saved)) return;
@@ -217,6 +222,7 @@ internal sealed class DoseWindow : Form
             string? value = root.GetProperty("value").GetString();
             if (value is null || value.Length > 30000) return;
             Clipboard.SetText(value);
+            lastClipboard = value;
             if (testing) clipboardChecked.TrySetResult(Clipboard.GetText() == value && value.Contains("150.00 mg") && value.Contains(Version));
             web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "copySummaryResult", ok = true, requestId }));
         }
@@ -225,6 +231,48 @@ internal sealed class DoseWindow : Form
         {
             if (testing) clipboardChecked.TrySetResult(false);
             web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "copySummaryResult", ok = false, requestId }));
+        }
+    }
+
+    private void ImportReport(JsonElement request)
+    {
+        string id = request.GetProperty("requestId").GetString() ?? "";
+        string source = request.GetProperty("source").GetString() ?? "";
+        if (id.Length > 100 || source is not ("biopsy" or "postop" or "ihc" or "fish")) return;
+        void Send(object value) => web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(value));
+        try {
+            string kind = request.GetProperty("kind").GetString() ?? "";
+            bool automatic = request.TryGetProperty("automatic", out var auto) && auto.ValueKind == JsonValueKind.True;
+            Image? image = null;
+            if (kind == "image") {
+                using var picker = new OpenFileDialog { Filter = "PNG / JPEG|*.png;*.jpg;*.jpeg", Multiselect = false };
+                if (picker.ShowDialog(this) != DialogResult.OK) { Send(new {type="reportImportResult",requestId=id,cancelled=true}); return; }
+                if (new FileInfo(picker.FileName).Length > 12*1024*1024) throw new IOException();
+                using var stream = File.OpenRead(picker.FileName);
+                using var original = Image.FromStream(stream, false, true);
+                if ((long)original.Width*original.Height > 20000000) throw new IOException();
+                image = new Bitmap(original);
+            } else if (kind == "clipboard") {
+                if (Clipboard.ContainsImage()) image = Clipboard.GetImage();
+                else {
+                    string text = Clipboard.ContainsText() ? Clipboard.GetText() : "";
+                    bool marker = System.Text.RegularExpressions.Regex.IsMatch(text,@"\b(?:ER|PR|HER[ -]?2|Ki[ -]?67)\b|乳腺|病理|免疫组化|免疫組化",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (automatic && (text==lastClipboard || !marker)) { Send(new {type="reportImportResult",requestId=id,cancelled=true}); return; }
+                    if (text.Length>40000) throw new IOException();
+                    lastClipboard=text;Send(new {type="reportImportResult",requestId=id,text});return;
+                }
+            }
+            using (image) {
+                if (image is null || (long)image.Width*image.Height>20000000) throw new IOException();
+                using var stream = new MemoryStream();image.Save(stream,System.Drawing.Imaging.ImageFormat.Png);
+                if (stream.Length>12*1024*1024) throw new IOException();
+                string signature = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream.ToArray()));
+                if (automatic && signature==lastClipboard) { Send(new {type="reportImportResult",requestId=id,cancelled=true}); return; }
+                lastClipboard=signature;
+                Send(new {type="reportImportResult",requestId=id,image="data:image/png;base64,"+Convert.ToBase64String(stream.ToArray())});
+            }
+        } catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException or System.Runtime.InteropServices.ExternalException) {
+            Send(new {type="reportImportResult",requestId=id,error=true});
         }
     }
 
@@ -307,7 +355,24 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
         bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
-        FinishTest(passed && languagePreferencePassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, languagePreferencePassed }));
+        // Real renderer + bundled OCR + native clipboard, using only fictional text.
+        using (var bitmap = new Bitmap(1600,500)) {
+            using var graphics = Graphics.FromImage(bitmap);graphics.Clear(Color.White);
+            using var font = new Font("Arial",36);
+            graphics.DrawString("SYNTHETIC REPORT - NOT A PATIENT\nER: 80%; PR: 20%; HER2: 3+\nKi-67: 35%",font,Brushes.Black,new PointF(40,40));
+            Clipboard.SetImage(bitmap);
+        }
+        await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImport.request('clipboard')");
+        var deadline = DateTime.UtcNow.AddSeconds(40);
+        while (DateTime.UtcNow < deadline && await web.CoreWebView2.ExecuteScriptAsync("window.ChemoImport.busy") == "true") await Task.Delay(250);
+        string ocrResult = await web.CoreWebView2.ExecuteScriptAsync("({passed:document.getElementById('report-import-dialog').open && document.getElementById('report-field-ER').value==='positive' && document.getElementById('report-field-PR').value==='positive' && document.getElementById('report-field-IHC').value==='3+' && !document.getElementById('report-reviewed').checked && document.getElementById('raw-result').textContent==='',status:document.getElementById('report-import-status').textContent})");
+        using var ocr = JsonDocument.Parse(ocrResult);
+        bool ocrPassed = ocr.RootElement.GetProperty("passed").GetBoolean();
+        if (testReport is not null) {
+            using var screenshot = File.Create(Path.ChangeExtension(testReport,".ocr.png"));
+            await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,screenshot);
+        }
+        FinishTest(passed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
     }
 
     private void FinishTest(bool passed, string detail)

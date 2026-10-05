@@ -22,7 +22,7 @@ python3 scripts/build-native.py \
 
 ## Android
 
-aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 8，versionName 1.1.0-preview，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
+aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 8，versionName 2.0.0，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
 
 首次构建在工作目录 signing 下生成测试私钥和随机密码。**后续同包名升级须保存并沿用此密钥**，删除工作目录前请安全备份 signing。它不属于源码，不能上传 GitHub。
 
@@ -43,9 +43,9 @@ Cocoa / WKWebView 原生 arm64 外壳，macOS 13+，非持久化 WebView。当�
 
 EXE/APK/DMG 与对应源码、LICENSE、构建说明一起交付。源码 ZIP 不包含 SDK、JDK、Node、node_modules、原 Windows EXE、指南 PDF 或签名私钥。
 
-## Windows 1.1.0-preview
+## Windows 2.0.0
 
-Windows Forms + WebView2 原生外壳，与 Mac、安卓复用全部 13 个网页资源、同一方案目录和计算核心。发布的 EXE 内置 .NET 10 运行时与 WebView2 SDK/loader；无需用户另装 .NET，但需要微软 Evergreen WebView2 Runtime。推荐 Windows 11 x64，兼容 Windows 10 22H2 x64；此现代 x64 外壳不支持 Windows 7 或 32 位系统。新增的 x86 原生兼容外壳面向 Windows 7 SP1 / XP SP3，详见 [Windows 兼容版](windows-legacy.md)，旧系统启动验收尚未完成。暂无 Windows ARM 原生版本。
+Windows Forms + WebView2 原生外壳，与 Mac、安卓复用全部网页与离线识别资源、同一方案目录和计算核心。发布的 EXE 内置 .NET 10 运行时与 WebView2 SDK/loader；无需用户另装 .NET，但需要微软 Evergreen WebView2 Runtime。推荐 Windows 11 x64，兼容 Windows 10 22H2 x64；此现代 x64 外壳不支持 Windows 7 或 32 位系统。新增的 x86 原生兼容外壳面向 Windows 7 SP1 / XP SP3，详见 [Windows 兼容版](windows-legacy.md)，旧系统启动验收尚未完成。暂无 Windows ARM 原生版本。
 
 页面通过内嵌资源响应加载，不创建本地 HTTP 服务，不访问外部网页。导航仅允许内嵌主页和自定义单药页；外部请求、子框架、弹窗、下载和权限申请被拒绝。WebView 使用 InPrivate 模式与每次启动独立的临时 profile，应用不写入病例参数；框架可能在系统临时目录解包组件。复制消息经过来源和长度检查，界面等待原生剪贴板回执后提示成功。第三方运行时许可原文在 apps/windows/licenses 中，EXE 的“帮助 → 第三方许可”可查看。
 
@@ -56,7 +56,7 @@ python3 scripts/build-native.py --platform windows --node /path/to/node --dotnet
 在 Windows 上可运行：
 
 ```powershell
-.\ChemoDose-1.1.0-preview-windows-x64.exe --self-test --test-report windows-self-test.json
+.\ChemoDose-2.0.0-windows-x64.exe --self-test --test-report windows-self-test.json
 ```
 
 自检使用合成数据，验证启动、版本、内置 TCbHP 计算、复制回执、长方案名边框和切换时旧结果清除；写入 JSON 与窗口内容截图，不读取真实病例。GitHub Windows workflow 提供相同验证。自检通过不代表临床验证或全部 Windows 设备兼容性。当前无 Authenticode 代码签名。
@@ -81,4 +81,8 @@ node scripts/build-web.mjs 生成 core.browser.js、catalogue.browser.js 、cata
 
 ## 语言资源
 
-`data/i18n.json` 为受控界面/目录的英文与繁体词典，`i18n.js` 不翻译用户手动输入。原生外壳只保存语言白名单值，仍不持久化病例参数。三端共用 13 份网页文件；变更翻译后须重新运行语言测试、生成脚本和构建三个安装包。
+`data/i18n.json` 为受控界面/目录的英文与繁体词典，`i18n.js` 不翻译用户手动输入。原生外壳只保存语言白名单值，仍不持久化病例参数。三端共用网页文件；OCR 引擎、模型和第三方许可一并内置；变更翻译后须重新运行语言测试、生成脚本和构建三个安装包。
+
+## 2.0.0 图片导入
+
+OCR 文件已固定版本并检入 `apps/shared-web/ocr`；`manifest.json` 记录 SHA256。常规构建不下载模型。Mac 原生外壳使用 Apple Vision；Windows/Android 使用固定 OEM=1 的 Tesseract.js 7.0.0，包内含普通、SIMD、Relaxed SIMD 三种 LSTM core。请保留所有第三方许可。Android 虚拟 https 来源由 `shouldInterceptRequest` 返回资产，无本地 HTTP 服务、无 INTERNET 权限；Windows 同样仅响应内嵌资源。

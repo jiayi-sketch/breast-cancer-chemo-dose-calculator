@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 import Cocoa
 import WebKit
+import Vision
+import ImageIO
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScriptMessageHandler {
     var window: NSWindow!
@@ -8,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var webRoot: URL!
     let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未知"
     let testing = CommandLine.arguments.contains("--self-test")
+    var lastClipboardCount = -1
 
     var language = "zh-Hans"
     let supportedLanguages = ["zh-Hans", "zh-Hant", "en"]
@@ -48,6 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
         config.userContentController.add(self, name: "copySummary")
         config.userContentController.add(self, name: "languagePreference")
+        config.userContentController.add(self, name: "reportImport")
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = false
@@ -88,6 +92,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame else { return }
+        if message.name == "reportImport", let request = message.body as? [String: Any] {
+            importReport(request)
+            return
+        }
         if message.name == "languagePreference", let value = message.body as? String, supportedLanguages.contains(value) {
             language = value
             UserDefaults.standard.set(value, forKey: "interfaceLanguage")
@@ -98,6 +106,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
               let value = message.body as? String, value.count < 30000 else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(value, forType: .string)
+        lastClipboardCount = NSPasteboard.general.changeCount
+    }
+
+    func sendImport(_ result: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: result), let text = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.ChemoImport?.receive(\(text))", completionHandler: nil)
+    }
+    func importReport(_ request: [String: Any]) {
+        guard let id = request["requestId"] as? String, id.count <= 100,
+              let kind = request["kind"] as? String,
+              let source = request["source"] as? String, ["biopsy", "postop", "ihc", "fish"].contains(source) else { return }
+        if kind == "image" {
+            let panel = NSOpenPanel(); panel.allowedContentTypes = [.png, .jpeg]; panel.allowsMultipleSelection = false
+            panel.beginSheetModal(for: window) { response in
+                guard response == .OK, let url = panel.url else { self.sendImport(["requestId":id,"cancelled":true]); return }
+                guard let attrs = try? FileManager.default.attributesOfItem(atPath:url.path), let size = attrs[.size] as? NSNumber,
+                      size.intValue <= 12*1024*1024, let data = try? Data(contentsOf:url) else { self.sendImport(["requestId":id,"error":true]); return }
+                self.recognize(data,id:id)
+            }
+        } else if kind == "clipboard" {
+            let clipboard = NSPasteboard.general
+            if request["automatic"] as? Bool == true && clipboard.changeCount == lastClipboardCount { sendImport(["requestId":id,"cancelled":true]); return }
+            lastClipboardCount = clipboard.changeCount
+            if let data = clipboard.data(forType:.png) ?? clipboard.data(forType:.tiff) {
+                recognize(data,id:id)
+            } else if let text = clipboard.string(forType:.string), text.count <= 40000 {
+                if request["automatic"] as? Bool == true && text.range(of:"\\b(?:ER|PR|HER[ -]?2|Ki[ -]?67)\\b|乳腺|病理|免疫组化|免疫組化", options:[.regularExpression,.caseInsensitive]) == nil { sendImport(["requestId":id,"cancelled":true]); return }
+                sendImport(["requestId":id,"text":text])
+            } else { sendImport(["requestId":id,"error":true]) }
+        }
+    }
+    func recognize(_ data: Data, id: String) {
+        sendImport(["requestId":id,"started":true])
+        guard data.count <= 12*1024*1024, let source = CGImageSourceCreateWithData(data as CFData,nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? NSNumber, let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+              width.doubleValue * height.doubleValue <= 20000000, let image = CGImageSourceCreateImageAtIndex(source,0,nil) else { sendImport(["requestId":id,"error":true]); return }
+        DispatchQueue.global(qos:.userInitiated).async {
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US"]
+            request.usesLanguageCorrection = false
+            request.automaticallyDetectsLanguage = true
+            do {
+                try VNImageRequestHandler(cgImage:image).perform([request])
+                let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator:"\n")
+                DispatchQueue.main.async { self.sendImport(["requestId":id,"text":text,"ocr":true]) }
+            } catch { DispatchQueue.main.async { self.sendImport(["requestId":id,"error":true]) } }
+        }
+    }
+    func applicationDidBecomeActive(_ notification: Notification) {
+        webView?.evaluateJavaScript("window.ChemoImport?.foreground()", completionHandler:nil)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
