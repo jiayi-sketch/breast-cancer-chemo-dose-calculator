@@ -26,7 +26,7 @@ jobs:
       - name: Restore reviewed dependencies and verify compiler archives
         shell: pwsh
         run: |
-          npm ci --ignore-scripts
+          npm install --ignore-scripts --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Force build/inputs,build/verification,build/release | Out-Null
           $packages = @(
