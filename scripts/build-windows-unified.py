@@ -36,8 +36,8 @@ def main():
     parser.add_argument('--legacy-config', type=pathlib.Path, required=True)
     parser.add_argument('--output', type=pathlib.Path, required=True)
     args = parser.parse_args()
-    version = json.loads((ROOT / 'package.json').read_text())['version']
-    if version != '2.0.0':
+    version = json.loads((ROOT / 'apps/windows/version.json').read_text())['version']
+    if version != '2.0.1':
         raise SystemExit('Update launcher assembly versions before changing the application version.')
     if pe_machine(args.modern) != 0x8664 or pe_machine(args.legacy) != 0x14c:
         raise SystemExit('Expected a native x64 modern EXE and x86 legacy EXE.')

@@ -1,0 +1,96 @@
+name: Windows compact UI and installer verification
+on:
+  push:
+    branches: [codex/windows-compact-installer]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.401'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Restore reviewed dependencies and verify compiler archives
+        shell: pwsh
+        run: |
+          npm ci --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force build/inputs,build/verification,build/release | Out-Null
+          $packages = @(
+            @('net40','https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net40/1.0.3/microsoft.netframework.referenceassemblies.net40.1.0.3.nupkg','54d6e20a1b61caf79395d6d71d091265e81f5a5705ac4ae52af45ca143c3c694'),
+            @('jint','https://api.nuget.org/v3-flatcontainer/jint/2.11.58/jint.2.11.58.nupkg','db72afa0e9db4da65a886f0f7307e22f8f2695b37a19ca274529501df2aa83db'),
+            @('nsis','https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip','ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
+          )
+          foreach ($item in $packages) {
+            Invoke-WebRequest $item[1] -OutFile "build/inputs/$($item[0]).zip"
+            if ((Get-FileHash "build/inputs/$($item[0]).zip" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $item[2]) { throw "Compiler archive hash mismatch: $($item[0])" }
+            Expand-Archive "build/inputs/$($item[0]).zip" "build/inputs/$($item[0])"
+          }
+      - name: Build both Windows interfaces and compare the legacy engine
+        shell: pwsh
+        run: |
+          $dotnet = (Get-Command dotnet).Source
+          $node = (Get-Command node).Source
+          $jint = "$PWD/build/inputs/jint/lib/net40/Jint.dll"
+          python scripts/build-windows-legacy.py --dotnet $dotnet --references "$PWD/build/inputs/net40/build/.NETFramework/v4.0" --jint $jint --node $node --typescript "$PWD/node_modules/typescript/lib/typescript.js" --output "$PWD/build/legacy"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test packages/calculation-core/tests/*.test.mjs tests/*.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build tests/windows-legacy/EngineHarness.csproj -c Release -o build/harness "-p:JintPath=$jint"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/verify-windows-legacy-engine.mjs $dotnet "$PWD/build/harness/EngineHarness.dll" | Tee-Object build/verification/legacy-engine.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish apps/windows/ChemoDose.Windows.csproj -c Release -r win-x64 --self-contained true -o build/modern -p:ContinuousIntegrationBuild=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build and inspect unified EXE and per-user setup
+        shell: pwsh
+        run: |
+          $dotnet = (Get-Command dotnet).Source
+          python scripts/build-windows-unified.py --dotnet $dotnet --references "$PWD/build/inputs/net40/build/.NETFramework/v4.0" --modern "$PWD/build/modern/ChemoDose.exe" --legacy "$PWD/build/legacy/ChemoDose-2.0.1-windows-x86-legacy.exe" --legacy-config "$PWD/build/legacy/ChemoDose-2.0.1-windows-x86-legacy.exe.config" --output "$PWD/build/release"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/test-windows-unified.py --dotnet $dotnet --output "$PWD/build/verification" --exe "$PWD/build/release/ChemoDose-2.0.1-windows-unified.exe" --manifest "$PWD/build/release/windows-unified-build.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/build-windows-installer.py --makensis "$PWD/build/inputs/nsis/nsis-3.13/makensis.exe" --unified "$PWD/build/release/ChemoDose-2.0.1-windows-unified.exe" --output "$PWD/build/release"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item build/inputs/nsis/nsis-3.13/COPYING build/release/NSIS-COPYING.txt
+          Copy-Item build/legacy/windows-legacy-build.json build/release/
+      - name: Verify native clipboard, OCR, three languages and compact layouts
+        shell: pwsh
+        run: |
+          $exe = "$PWD/build/release/ChemoDose-2.0.1-windows-unified.exe"
+          foreach ($mode in @('modern','compat')) {
+            $report = "$PWD/build/verification/windows-$mode-self-test.json"
+            $arguments = "--self-test --test-report `"$report`""
+            if ($mode -eq 'compat') { $arguments = "--compat $arguments" }
+            $app = Start-Process $exe -ArgumentList $arguments -PassThru
+            if (-not $app.WaitForExit(150000)) { $app.Kill(); throw "$mode native verification timed out" }
+            if ($app.ExitCode -ne 0 -or -not (Test-Path $report)) { throw "$mode native verification failed" }
+            Get-Content $report
+            if (-not (Get-Content $report | ConvertFrom-Json).passed) { throw "$mode assertions failed" }
+          }
+      - name: Verify install, reinstall, shortcuts and conservative uninstall
+        shell: pwsh
+        run: scripts/ci/test-windows-installer.ps1
+      - name: Preserve exact tested files and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-2.0.1-tested
+          path: |
+            build/release/*
+            build/verification/*
+          if-no-files-found: warn
+          retention-days: 30

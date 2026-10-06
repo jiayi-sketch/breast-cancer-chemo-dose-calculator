@@ -187,6 +187,12 @@ internal sealed class DoseWindow : Form
             && uri.GetLeftPart(UriPartial.Authority) == Origin && e.Request.Method == "GET";
         byte[]? bytes = null;
         if (local) assets.TryGetValue(uri!.AbsolutePath, out bytes);
+        if (bytes is not null && uri!.AbsolutePath == "/index.html") {
+            // Windows presentation only; catalogue and dose rules stay shared.
+            string html = Encoding.UTF8.GetString(bytes).Replace("2.0.0", Version);
+            html = html.Replace("</head>", "<link rel=\"stylesheet\" href=\"windows-desktop/desktop.css\"><script defer src=\"windows-desktop/desktop.js\"></script></head>");
+            bytes = Encoding.UTF8.GetBytes(html);
+        }
         string mime = uri?.AbsolutePath.EndsWith(".html") == true ? "text/html"
             : uri?.AbsolutePath.EndsWith(".css") == true ? "text/css"
             : uri?.AbsolutePath.EndsWith(".wasm") == true ? "application/wasm"
@@ -328,11 +334,12 @@ internal sealed class DoseWindow : Form
               document.getElementById('section-0').click();
               const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
-              const active=document.querySelector('.is-selected'), bounds=active?.getBoundingClientRect();
-              const fits=!!active && [...active.children].every(c=>{const r=c.getBoundingClientRect();return r.top>=bounds.top && r.bottom<=bounds.bottom+1;});
+              window.ChemoWindowsDesktop?.synchronize();
+              const picker=document.getElementById('windows-regimen');
+              const fits=!!picker && picker.options[picker.selectedIndex]?.textContent===document.getElementById('entry-title').textContent && picker.getBoundingClientRect().right<=innerWidth;
               const cleared=document.getElementById('raw-result').textContent==='';
               window.scrollTo(0,0);
-              return {ready:window.ChemoAppReady,version:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
+              return {ready:window.ChemoAppReady,version:window.ChemoWindowsDesktop?.version,sharedCatalogueVersion:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
                 renalMethodRemoved,languages,reportChecks,reportReady:window.ChemoReportReady,languageSelectFits:document.getElementById('language').getBoundingClientRect().right<=innerWidth,
                 count:window.ChemoCatalogue.regimens.filter(r=>r.entryType==='regimen').length,rows:result.rows.length,first,longName:!!long,fits,cleared,
                 notice:document.body.textContent.includes('For academic exchange only. Commercial use is prohibited.') && document.body.textContent.includes('Copyright GitHub @jiayi-sketch')};
@@ -347,7 +354,7 @@ internal sealed class DoseWindow : Form
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, screenshot);
         }
         bool passed = r.GetProperty("ready").GetBoolean() && r.GetProperty("version").GetString() == Version
-            && r.GetProperty("engine").GetString() == Version && r.GetProperty("count").GetInt32() == 52
+            && r.GetProperty("engine").GetString() == "2.0.0" && r.GetProperty("sharedCatalogueVersion").GetString() == "2.0.0" && r.GetProperty("count").GetInt32() == 52
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
             && r.GetProperty("renalMethodRemoved").GetBoolean()
@@ -355,6 +362,7 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("languages").EnumerateArray().All(item=>item.GetProperty("passed").GetBoolean())
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
+        bool desktopPreviewsPassed = await CaptureDesktopPreviews();
         bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
         // Real renderer + bundled OCR + native clipboard, starting from an empty fictional case.
         await web.CoreWebView2.ExecuteScriptAsync("document.getElementById('reports-clear').click();document.getElementById('reports-open').click()");
@@ -374,7 +382,43 @@ internal sealed class DoseWindow : Form
             using var screenshot = File.Create(Path.ChangeExtension(testReport,".ocr.png"));
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,screenshot);
         }
-        FinishTest(passed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
+        FinishTest(passed && desktopPreviewsPassed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, desktopPreviewsPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
+    }
+
+    private async Task<bool> CaptureDesktopPreviews()
+    {
+        bool passed = true;
+        foreach (string code in new[] { "zh-Hans", "zh-Hant", "en" }) {
+            string language = JsonSerializer.Serialize(code);
+            string check = await web.CoreWebView2.ExecuteScriptAsync($$"""
+                (() => {
+                  window.ChemoI18n.setLanguage({{language}});
+                  document.getElementById('section-0').click();
+                  document.querySelector('[data-entry-id="r001"]').click();
+                  for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','Synthetic QA']]) {
+                    const field=document.getElementById(id);field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));
+                  }
+                  document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;
+                  document.getElementById('calculate').click();window.ChemoWindowsDesktop.synchronize();window.scrollTo(0,0);
+                  return document.querySelectorAll('.drug-row').length===4 && document.getElementById('dose-table').textContent.includes('450.00') && document.documentElement.scrollWidth<=innerWidth;
+                })()
+                """);
+            passed &= check == "true";
+            await Task.Delay(200);
+            if (testReport is not null) {
+                using var preview = File.Create(Path.ChangeExtension(testReport, "." + code + ".png"));
+                await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,preview);
+            }
+        }
+        ClientSize = new Size(1024,700);
+        await Task.Delay(200);
+        string small = await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-entry-id=\"r018\"]').click();window.ChemoWindowsDesktop.synchronize();document.documentElement.scrollWidth<=innerWidth && document.querySelectorAll('.drug-row').length===6 && document.getElementById('windows-regimen').getBoundingClientRect().width>=250");
+        passed &= small == "true";
+        if (testReport is not null) {
+            using var preview = File.Create(Path.ChangeExtension(testReport,".small.png"));
+            await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,preview);
+        }
+        return passed;
     }
 
     private void FinishTest(bool passed, string detail)
