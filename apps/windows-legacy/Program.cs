@@ -202,7 +202,7 @@ namespace ChemoDose.Legacy {
    var display=new Panel {Dock=DockStyle.Fill,MinimumSize=new Size(0,180)};display.Controls.Add(drugGrid);display.Controls.Add(detail);Row(right,display,true);Row(right,Label("数值为每次给药量；不相加各药或各阶段。区间保留，不自动取中值。"),false);columns.Controls.Add(right,1,0);Row(table,columns,true);
   }
   void RenderDrugs(Dictionary<string,object> result) {
-   drugGrid.Rows.Clear();bsaLabel.Text="—";if(result!=null)foreach(var row in A(result["rows"])) {var basis=D(D(D(row)["result"])["basis"]);if(basis.ContainsKey("bsaM2")){bsaLabel.Text=Convert.ToDouble(basis["bsaM2"]).ToString("F3",System.Globalization.CultureInfo.InvariantCulture)+" m²";break;}}bool dose=selected!=null&&selected.ContainsKey("drugs");drugGrid.Visible=dose;detail.Visible=!dose;patientInputs.Parent.Visible=dose;patientInputs.Visible=dose;confirmed.Visible=dose;
+   drugGrid.Rows.Clear();bsaLabel.Text="—";if(result!=null)foreach(var row in A(result["rows"])) {var basis=D(D(D(row)["result"])["basis"]);if(basis.ContainsKey("bsaM2")){bsaLabel.Text=Convert.ToDouble(basis["bsaM2"]).ToString("F3",System.Globalization.CultureInfo.InvariantCulture)+" m²";break;}}bool dose=selected!=null&&selected.ContainsKey("drugs");drugGrid.Visible=dose;detail.Visible=!dose;patientInputs.Parent.Visible=dose;((TableLayoutPanel)patientInputs.Parent.Parent).RowStyles[0]=new RowStyle(SizeType.Absolute,dose?200:0);patientInputs.Visible=dose;confirmed.Visible=dose;
    bool auc=dose&&A(selected["drugs"]).Any(o=>S(D(o),"kind")=="auc");if(renal.Parent!=null)renal.Parent.Visible=auc;renalConfirmed.Visible=auc;
    if(!dose)return;
    foreach(var o in A(selected["drugs"])) {
