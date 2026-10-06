@@ -183,12 +183,12 @@ namespace ChemoDose.Legacy {
   }
   void BuildCatalogue() {
    var tab=new Panel {BackColor=Color.FromArgb(243,249,253)};tabs.AddPage(tab);var table=Table();table.AutoScroll=false;table.Padding=Padding.Empty;tab.Controls.Add(table);
-   var patient=Table();patient.AutoScroll=false;patient.AutoSize=true;patient.BackColor=Color.White;patient.Padding=new Padding(10,6,10,6);var patientTitle=Label("本次计算参数");patientTitle.Margin=new Padding(4,3,4,3);patientTitle.Font=new Font(Font,FontStyle.Bold);patientTitle.ForeColor=Color.FromArgb(10,79,126);Row(patient,patientTitle,false);
+   var patient=Table();patient.AutoScroll=false;patient.AutoSize=false;patient.BackColor=Color.White;patient.Padding=new Padding(10,6,10,6);var patientTitle=Label("本次计算参数");patientTitle.Margin=new Padding(4,3,4,3);patientTitle.Font=new Font(Font,FontStyle.Bold);patientTitle.ForeColor=Color.FromArgb(10,79,126);Row(patient,patientTitle,false);
    patientInputs.Controls.Add(InputField("身高（cm）",height,105));patientInputs.Controls.Add(InputField("体重（kg）",weight,105));patientInputs.Controls.Add(InputField("肾功能（mL/min）",renal,130));patientInputs.Controls.Add(InputField("本次核对人",reviewer,160));
    var bsa=Flow();bsa.FlowDirection=FlowDirection.TopDown;bsa.WrapContents=false;bsa.AutoSize=true;bsa.Dock=DockStyle.None;bsa.Controls.Add(Label("体表面积 BSA"));bsa.Controls.Add(bsaLabel);patientInputs.Controls.Add(bsa);Row(patient,patientInputs,false);
    Labelled(renalConfirmed,"请确认肾功能参数的单位和适用性。");renalConfirmed.AutoSize=true;renalConfirmed.Margin=new Padding(6,3,6,3);renalConfirmed.CheckedChanged+=(sender,e)=>InvalidateDose();Row(patient,renalConfirmed,false);
    Labelled(confirmed,"请先核对所选方案、分阶段用药及本次参数，然后勾选确认。");confirmed.AutoSize=true;confirmed.Margin=new Padding(6,3,6,3);confirmed.CheckedChanged+=(sender,e)=>InvalidateOutput();Row(patient,confirmed,false);
-   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(sender,e)=>Guard(()=>{if(summary!=null){Clipboard.SetText(summary);lastClipboard=summary;}});actions.Controls.Add(copy);actions.Controls.Add(Button("查看完整核对单",()=>{if(summary!=null)ShowText(T("算术核对单（非处方）"),summary);}));Row(patient,actions,false);Row(table,patient,false);
+   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(sender,e)=>Guard(()=>{if(summary!=null){Clipboard.SetText(summary);lastClipboard=summary;}});actions.Controls.Add(copy);actions.Controls.Add(Button("查看完整核对单",()=>{if(summary!=null)ShowText(T("算术核对单（非处方）"),summary);}));Row(patient,actions,false);Row(table,patient,false);table.RowStyles[0]=new RowStyle(SizeType.Absolute,200);
    var columns=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,Margin=new Padding(0,8,0,0)};columns.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,225));columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
    var catalog=Table();catalog.AutoScroll=false;catalog.BackColor=Color.White;catalog.Padding=new Padding(8);var catalogTitle=Label("方案与推荐摘要");catalogTitle.Font=new Font(Font,FontStyle.Bold);catalogTitle.ForeColor=Color.FromArgb(10,79,126);Row(catalog,catalogTitle,false);
    Row(catalog,Label("搜索"),false);query.Dock=DockStyle.Fill;Row(catalog,query,false);Row(catalog,Label("受体分型"),false);subtype.Dock=DockStyle.Fill;Row(catalog,subtype,false);Row(catalog,schemeList,true);schemeList.SizeChanged+=(sender,e)=>LayoutSchemeButtons();columns.Controls.Add(catalog,0,0);
@@ -349,7 +349,7 @@ namespace ChemoDose.Legacy {
     }
     ClientSize=new Size(1024,700);OpenCatalogueEntry("r018");PerformLayout();
     if(drugGrid.Rows.Count!=6||drugGrid.Width<500||drugGrid.Height<180||schemeList.Width<180||patientInputs.PointToScreen(Point.Empty).Y>=schemeList.PointToScreen(Point.Empty).Y)throw new Exception("Classic layout on small display");
-    if(drugGrid.PointToScreen(new Point(drugGrid.Width,0)).X>tabs.PointToScreen(new Point(tabs.ClientSize.Width,0)).X||((TableLayoutPanel)Controls[0]).GetControlFromPosition(0,0).Height>90||drugGrid.Columns.Cast<DataGridViewColumn>().Sum(c=>c.Width)>drugGrid.ClientSize.Width)throw new Exception("Classic header or result columns clipped");
+    if(drugGrid.PointToScreen(new Point(drugGrid.Width,0)).X>tabs.PointToScreen(new Point(tabs.ClientSize.Width,0)).X||((TableLayoutPanel)Controls[0]).GetControlFromPosition(0,0).Height>90||drugGrid.Columns.Cast<DataGridViewColumn>().Sum(c=>c.Width)>drugGrid.ClientSize.Width||patientInputs.Parent.Height>205)throw new Exception("Classic header or result columns clipped");
     if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+".small.png");
     passed=true;
    }catch(Exception e){error=e.ToString();}
