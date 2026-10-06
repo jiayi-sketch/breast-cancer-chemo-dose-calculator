@@ -35,7 +35,9 @@ jobs:
             @('nsis','https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip','ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
           )
           foreach ($item in $packages) {
-            Invoke-WebRequest $item[1] -OutFile "build/inputs/$($item[0]).zip"
+            curl.exe --fail --location --retry 3 --silent --show-error $item[1] --output "build/inputs/$($item[0]).zip"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Write-Host "$($item[0]): $((Get-Item "build/inputs/$($item[0]).zip").Length) bytes; $((Get-FileHash "build/inputs/$($item[0]).zip" -Algorithm SHA256).Hash)"
             if ((Get-FileHash "build/inputs/$($item[0]).zip" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $item[2]) { throw "Compiler archive hash mismatch: $($item[0])" }
             Expand-Archive "build/inputs/$($item[0]).zip" "build/inputs/$($item[0])"
           }
