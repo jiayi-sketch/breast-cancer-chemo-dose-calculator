@@ -37,6 +37,7 @@ internal sealed class DoseWindow : Form
     private static bool SupportedLanguage(string? value) => value is "zh-Hans" or "zh-Hant" or "en";
     private string Localized(string source) {
         var translations = new Dictionary<string, (string Traditional, string English)> {
+            ["Windows 应用版本"]=("Windows 應用程式版本","Windows application version"),
             ["帮助"]=("幫助","Help"), ["关于乳腺癌剂量计算"]=("關於乳腺癌劑量計算","About Breast Cancer Dose Calculator"),
             ["查看授权"]=("查看授權","View licence"), ["第三方许可"]=("第三方許可","Third-party licences"), ["退出"]=("退出","Exit"),
             ["关于"]=("關於","About"), ["非商业学术授权"]=("非商業學術授權","Noncommercial academic licence"),
@@ -54,8 +55,8 @@ internal sealed class DoseWindow : Form
     }
     private void ShowAbout() {
         string detail = language == "en"
-            ? $"Breast Cancer Dose Calculator {Version}\n\nFor academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\n\n52 regimens, 7 single-drug references and 18 guideline summary cards.\nShared interface, catalogue and calculation core on Mac, Android and Windows.\nNot independently clinically validated; professional verification required."
-            : $"{Localized("乳腺癌剂量计算")} {Version}\n\n{(language == "zh-Hant" ? "僅限於學術交流，嚴禁商業用途\n版權所有 GitHub @jiayi-sketch\n\n52 個內置方案、7 個單藥參考、18 張指南摘要卡。\n與 Mac、安卓使用相同介面、方案庫和計算核心。\n未經獨立臨床驗證，結果須專業覆核。" : Notice + "\n\n52 个内置方案、7 个单药参考、18 张指南摘要卡。\n与 Mac、安卓使用相同界面、方案库和计算核心。\n未经独立临床验证，结果须专业复核。")}";
+            ? $"Breast Cancer Dose Calculator {Version}\n\nFor academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\n\n52 regimens, 7 single-drug references and 18 guideline summary cards.\nShared catalogue and calculation core on Mac, Android and Windows.\nNot independently clinically validated; professional verification required."
+            : $"{Localized("乳腺癌剂量计算")} {Version}\n\n{(language == "zh-Hant" ? "僅限於學術交流，嚴禁商業用途\n版權所有 GitHub @jiayi-sketch\n\n52 個內置方案、7 個單藥參考、18 張指南摘要卡。\n與 Mac、安卓使用相同方案庫和計算核心。\n未經獨立臨床驗證，結果須專業覆核。" : Notice + "\n\n52 个内置方案、7 个单药参考、18 张指南摘要卡。\n与 Mac、安卓使用相同方案库和计算核心。\n未经独立临床验证，结果须专业复核。")}";
         MessageBox.Show(this,detail,Localized("关于"),MessageBoxButtons.OK,MessageBoxIcon.Information);
     }
     private readonly TaskCompletionSource<bool> clipboardChecked = new();
@@ -187,10 +188,10 @@ internal sealed class DoseWindow : Form
             && uri.GetLeftPart(UriPartial.Authority) == Origin && e.Request.Method == "GET";
         byte[]? bytes = null;
         if (local) assets.TryGetValue(uri!.AbsolutePath, out bytes);
-        if (bytes is not null && uri!.AbsolutePath == "/index.html") {
+        if (bytes is not null && uri!.AbsolutePath.EndsWith(".html", StringComparison.Ordinal)) {
             // Windows presentation only; catalogue and dose rules stay shared.
             string html = Encoding.UTF8.GetString(bytes).Replace("2.0.0", Version);
-            html = html.Replace("</head>", "<link rel=\"stylesheet\" href=\"windows-desktop/desktop.css\"><script defer src=\"windows-desktop/desktop.js\"></script></head>");
+            if (uri.AbsolutePath == "/index.html") html = html.Replace("</head>", "<link rel=\"stylesheet\" href=\"windows-desktop/desktop.css\"><script defer src=\"windows-desktop/desktop.js\"></script></head>");
             bytes = Encoding.UTF8.GetBytes(html);
         }
         string mime = uri?.AbsolutePath.EndsWith(".html") == true ? "text/html"
@@ -227,6 +228,7 @@ internal sealed class DoseWindow : Form
             if (requestId is null || requestId.Length > 100) return;
             string? value = root.GetProperty("value").GetString();
             if (value is null || value.Length > 30000) return;
+            value = value.TrimEnd() + "\n\n" + Localized("Windows 应用版本") + ": " + Version;
             Clipboard.SetText(value);
             lastClipboard = value;
             if (testing) clipboardChecked.TrySetResult(Clipboard.GetText() == value && value.Contains("150.00 mg") && value.Contains(Version));

@@ -79,6 +79,7 @@ jobs:
             if ($mode -eq 'compat') { $arguments = "--compat $arguments" }
             $app = Start-Process $exe -ArgumentList $arguments -PassThru
             if (-not $app.WaitForExit(150000)) { $app.Kill(); throw "$mode native verification timed out" }
+            if (Test-Path $report) { Get-Content $report }
             if ($app.ExitCode -ne 0 -or -not (Test-Path $report)) { throw "$mode native verification failed" }
             Get-Content $report
             if (-not (Get-Content $report | ConvertFrom-Json).passed) { throw "$mode assertions failed" }
@@ -92,7 +93,9 @@ jobs:
         with:
           name: windows-2.0.1-tested
           path: |
-            build/release/*
+            build/release/*.exe
+            build/release/*.json
+            build/release/*.txt
             build/verification/*
           if-no-files-found: warn
           retention-days: 30

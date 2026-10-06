@@ -10,6 +10,10 @@ $startMenu = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\Che
 New-Item -ItemType Directory -Force $destination | Out-Null
 Set-Content (Join-Path $destination 'keep.txt') 'Fictional QA sentinel; not owned by installer.'
 $hash = (Get-FileHash $payload -Algorithm SHA256).Hash
+$preferences=Join-Path $env:LOCALAPPDATA 'ChemoDose'
+New-Item -ItemType Directory -Force $preferences | Out-Null
+Set-Content (Join-Path $preferences 'language.json') '{"language":"zh-Hant"}'
+Set-Content (Join-Path $preferences 'legacy-language.txt') 'zh-Hant'
 $checks = @()
 foreach ($pass in @('install','upgrade')) {
   # NSIS /D must be the final, unquoted argument, including a path with spaces.
@@ -26,7 +30,8 @@ foreach ($pass in @('install','upgrade')) {
     if (-not (Test-Path $shortcut) -or $shell.CreateShortcut($shortcut).TargetPath -ne (Join-Path $destination 'ChemoDose.exe')) { throw 'Shortcut target incorrect' }
   }
   if (-not (Test-Path (Join-Path $destination 'keep.txt'))) { throw 'Installer removed unrelated file' }
-  $checks += @{operation=$pass;passed=$true;payloadSha256=$hash.ToLowerInvariant()}
+  if ((Get-Content (Join-Path $preferences 'language.json') | ConvertFrom-Json).language -ne 'zh-Hant' -or (Get-Content (Join-Path $preferences 'legacy-language.txt')).Trim() -ne 'zh-Hant') { throw 'Language preference changed during installation' }
+  $checks += @{operation=$pass;passed=$true;payloadSha256=$hash.ToLowerInvariant();languagePreferencesRetained=$true}
 }
 $probe = "$PWD/build/verification/installed-selection.json"
 $app = Start-Process (Join-Path $destination 'ChemoDose.exe') -ArgumentList "--describe --report `"$probe`"" -PassThru -Wait
@@ -41,7 +46,8 @@ foreach ($name in @('ChemoDose.exe','LICENSE.txt','WINDOWS-INSTALLATION.txt','Un
 }
 if (-not (Test-Path (Join-Path $destination 'keep.txt'))) { throw 'Uninstaller removed unrelated file' }
 if ((Test-Path $registry) -or (Test-Path $desktop) -or (Test-Path (Join-Path $startMenu 'ChemoDose.lnk'))) { throw 'Uninstall entry or shortcut remained' }
-$checks += @{operation='uninstall';passed=$true;unrelatedFileRetained=$true}
+if ((Get-Content (Join-Path $preferences 'language.json') | ConvertFrom-Json).language -ne 'zh-Hant' -or (Get-Content (Join-Path $preferences 'legacy-language.txt')).Trim() -ne 'zh-Hant') { throw 'Uninstaller removed language preferences' }
+$checks += @{operation='uninstall';passed=$true;unrelatedFileRetained=$true;languagePreferencesRetained=$true}
 @{passed=$true;version='2.0.1';host=[Environment]::OSVersion.VersionString;checks=$checks;xpWindows7DeviceTest='pending';note='Native hosted Windows tests; not old-system device or clinical validation.'} | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 build/verification/windows-installer-native.json
 $record=Get-Content build/release/windows-installer-build.json | ConvertFrom-Json
 $record.nativeInstallUpgradeUninstall='passed on GitHub-hosted Windows'
