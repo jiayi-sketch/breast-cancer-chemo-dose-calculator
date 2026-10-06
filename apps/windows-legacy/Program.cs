@@ -221,7 +221,7 @@ namespace ChemoDose.Legacy {
     if(S(d,"kind")=="fixed_alt") {alternativesPanel.Controls.Add(Label(T(S(d,"name"))));var c=new ComboBox();alternatives[S(d,"id")]=c;var schedules=A(d["schedules"]).Select(Convert.ToString).ToArray();Options(c,new[]{"","0","1"},new[]{"请选择",schedules[0],schedules[1]},"");c.SelectedIndexChanged+=(s,e)=>InvalidateDose();alternativesPanel.Controls.Add(c);}
    }
    detail.Text=String.Join("\r\n\r\n",text.ToArray());selectedTitle.Text=T(S(selected,"name"));
-   bool wasUpdating=updating;updating=true;for(int i=0;i<entryPicker.Items.Count;i++)if(((Choice)entryPicker.Items[i]).Key==id){entryPicker.SelectedIndex=i;break;}updating=wasUpdating;RenderDrugs(null);
+   bool wasUpdating=updating;updating=true;for(int i=0;i<entryPicker.Items.Count;i++)if(((Choice)entryPicker.Items[i]).Key==id){entryPicker.SelectedIndex=i;entries.SelectedIndex=i;break;}updating=wasUpdating;RenderDrugs(null);
   }
   object NumberInput(TextBox input){double value;if(String.IsNullOrWhiteSpace(input.Text))return null;return Double.TryParse(input.Text,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out value)?(object)value:"invalid";}
   void Calculate() {
@@ -295,6 +295,7 @@ namespace ChemoDose.Legacy {
      SelectEntry("c003");if(String.IsNullOrWhiteSpace(S(selected,"body"))||!detail.Text.Contains(T(S(selected,"body"))))throw new Exception("Reference card body");
     }
     OpenCatalogueEntry("r056");if(Key(entryPicker)!="r056"||S(selected,"id")!="r056")throw new Exception("Matched entry picker across settings");
+    entryPicker.SelectedIndex=0;if(S(selected,"id")!=Key(entryPicker))throw new Exception("Picker after opening a matched entry");
     OpenCatalogueEntry("r001");
     int reportIndex=Array.IndexOf(args,"--test-report");
     for(int l=0;l<3;l++) {
