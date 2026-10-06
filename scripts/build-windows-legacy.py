@@ -12,7 +12,7 @@ p.add_argument('--typescript',required=True,type=pathlib.Path)
 p.add_argument('--output',required=True,type=pathlib.Path)
 a=p.parse_args()
 version=json.loads((ROOT/'apps/windows/version.json').read_text())['version']
-if version!='2.0.1': raise SystemExit('Update legacy assembly version attributes before building a new version.')
+if version!='2.0.2': raise SystemExit('Update legacy assembly version attributes before building a new version.')
 subprocess.run([str(a.node),'scripts/build-web.mjs'],cwd=ROOT,check=True)
 env=dict(os.environ,TYPESCRIPT_MODULE=str(a.typescript.resolve()))
 subprocess.run([str(a.node),'scripts/build-legacy-engine.mjs'],cwd=ROOT,env=env,check=True)

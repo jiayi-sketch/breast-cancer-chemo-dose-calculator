@@ -337,8 +337,8 @@ internal sealed class DoseWindow : Form
               const long=[...document.querySelectorAll('.entry-button')].find(b=>b.textContent.replace(/\s/g,'').includes('AC→TP'));
               if (long) { long.click(); long.scrollIntoView({block:'nearest'}); }
               window.ChemoWindowsDesktop?.synchronize();
-              const picker=document.getElementById('windows-regimen');
-              const fits=!!picker && picker.options[picker.selectedIndex]?.textContent===document.getElementById('entry-title').textContent && picker.getBoundingClientRect().right<=innerWidth;
+              const selected=document.querySelector('.entry-button.is-selected');
+              const fits=!!selected && selected.querySelector('strong').textContent===document.getElementById('entry-title').textContent && selected.querySelector('strong').scrollHeight<=selected.querySelector('strong').clientHeight+1 && selected.getBoundingClientRect().right<=innerWidth;
               const cleared=document.getElementById('raw-result').textContent==='';
               window.scrollTo(0,0);
               return {ready:window.ChemoAppReady,version:window.ChemoWindowsDesktop?.version,sharedCatalogueVersion:window.ChemoCatalogue.appVersion,engine:window.DoseCore.ENGINE_VERSION,
@@ -414,7 +414,7 @@ internal sealed class DoseWindow : Form
         }
         ClientSize = new Size(1024,700);
         await Task.Delay(200);
-        string small = await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-entry-id=\"r018\"]').click();window.ChemoWindowsDesktop.synchronize();document.documentElement.scrollWidth<=innerWidth && document.querySelectorAll('.drug-row').length===6 && document.getElementById('windows-regimen').getBoundingClientRect().width>=250");
+        string small = await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-entry-id=\"r018\"]').click();window.ChemoWindowsDesktop.synchronize();document.documentElement.scrollWidth<=innerWidth && document.querySelectorAll('.drug-row').length===6 && document.getElementById('entry-list').getBoundingClientRect().width>=180 && document.querySelector('.patient-panel').getBoundingClientRect().top<document.querySelector('.catalogue-layout').getBoundingClientRect().top");
         passed &= small == "true";
         if (testReport is not null) {
             using var preview = File.Create(Path.ChangeExtension(testReport,".small.png"));

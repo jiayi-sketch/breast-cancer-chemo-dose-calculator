@@ -9,8 +9,8 @@ using System.Threading;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("ChemoDose Windows Unified")]
-[assembly: AssemblyVersion("2.0.1.0")]
-[assembly: AssemblyFileVersion("2.0.1.0")]
+[assembly: AssemblyVersion("2.0.2.0")]
+[assembly: AssemblyFileVersion("2.0.2.0")]
 [assembly: AssemblyCopyright("仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch")]
 namespace ChemoDose.Unified {
  static class Program {

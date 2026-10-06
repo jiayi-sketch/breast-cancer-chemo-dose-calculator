@@ -9,9 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-[assembly: AssemblyVersion("2.0.1.0")]
-[assembly: AssemblyFileVersion("2.0.1.0")]
-[assembly: AssemblyInformationalVersion("2.0.1")]
+[assembly: AssemblyVersion("2.0.2.0")]
+[assembly: AssemblyFileVersion("2.0.2.0")]
+[assembly: AssemblyInformationalVersion("2.0.2")]
 [assembly: AssemblyCopyright("版权所有 GitHub @jiayi-sketch；仅限于学术交流，严禁商业用途。")]
 namespace ChemoDose.Legacy {
  static class Program {
@@ -35,15 +35,21 @@ namespace ChemoDose.Legacy {
   public string Key,Label; public Choice(string k,string l){Key=k;Label=l;}
   public override string ToString(){return Label;}
  }
+ sealed class ClassicPages : Panel {
+  readonly List<Control> pages=new List<Control>(); int selected;
+  public event EventHandler SelectedIndexChanged;
+  public int SelectedIndex {get{return selected;}set{selected=value;for(int i=0;i<pages.Count;i++)pages[i].Visible=i==selected;if(selected>=0&&selected<pages.Count)pages[selected].BringToFront();if(SelectedIndexChanged!=null)SelectedIndexChanged(this,EventArgs.Empty);}}
+  public void AddPage(Control page){page.Dock=DockStyle.Fill;pages.Add(page);Controls.Add(page);page.Visible=pages.Count-1==selected;if(page.Visible)page.BringToFront();}
+ }
  sealed class LegacyWindow : Form {
-  const string Version="2.0.1";
+  const string Version="2.0.2";
   readonly JavaScriptSerializer json=new JavaScriptSerializer {MaxJsonLength=2000000};
   readonly EngineBridge bridge=new EngineBridge(EngineBridge.Resource("engine.js"));
   readonly Dictionary<Control,string> labels=new Dictionary<Control,string>();
   readonly Dictionary<string,ComboBox> fields=new Dictionary<string,ComboBox>();
   readonly Dictionary<string,TextBox> reports=new Dictionary<string,TextBox>();
   readonly Dictionary<string,ComboBox> alternatives=new Dictionary<string,ComboBox>();
-  readonly ComboBox language=new ComboBox(), section=new ComboBox(), subtype=new ComboBox(), entryPicker=new ComboBox(), help=new ComboBox();
+  readonly ComboBox language=new ComboBox(), section=new ComboBox(), subtype=new ComboBox(), help=new ComboBox();
   readonly DataGridView drugGrid=new DataGridView();
   readonly FlowLayoutPanel patientInputs=new FlowLayoutPanel {AutoSize=true,Dock=DockStyle.Fill,WrapContents=true};
   readonly Label selectedTitle=new Label {AutoSize=true,Dock=DockStyle.Fill,MaximumSize=new Size(1000,0)};
@@ -53,7 +59,11 @@ namespace ChemoDose.Legacy {
   readonly CheckBox confirmed=new CheckBox(), renalConfirmed=new CheckBox(), reportReviewed=new CheckBox(), specialReviewed=new CheckBox();
   readonly ListBox entries=new ListBox {HorizontalScrollbar=true}, matches=new ListBox {HorizontalScrollbar=true};
   readonly FlowLayoutPanel alternativesPanel=new FlowLayoutPanel {Dock=DockStyle.Fill,AutoSize=true,WrapContents=true};
-  readonly TabControl tabs=new TabControl {Dock=DockStyle.Fill};
+  readonly ClassicPages tabs=new ClassicPages {Dock=DockStyle.Fill};
+  readonly FlowLayoutPanel schemeList=new FlowLayoutPanel {Dock=DockStyle.Fill,AutoScroll=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,BackColor=Color.White};
+  readonly Dictionary<string,Button> schemeButtons=new Dictionary<string,Button>(), navButtons=new Dictionary<string,Button>();
+  readonly Label bsaLabel=new Label {AutoSize=true,Text="—",Font=new Font("Tahoma",15,FontStyle.Bold),ForeColor=Color.FromArgb(13,100,156)};
+  readonly TextBox brief=Area(true);
   readonly TabControl sourceTabs=new TabControl {Dock=DockStyle.Fill,Height=160};
   readonly CheckBox clipboardWatch=new CheckBox {AutoSize=true};
   string lastClipboard="";
@@ -77,14 +87,14 @@ namespace ChemoDose.Legacy {
     {"查看完整核对单",new[]{"查看完整覆核單","View verification sheet"}}, {"帮助",new[]{"幫助","Help"}},
     {"阶段",new[]{"階段","Phase"}}, {"药物",new[]{"藥物","Drug"}}, {"标准剂量",new[]{"標準劑量","Standard dose"}},
     {"计算量",new[]{"計算量","Calculated amount"}}, {"给药日",new[]{"給藥日","Administration days"}},
-    {"疗程",new[]{"療程","Duration / cycles"}}, {"出处",new[]{"出處","Source"}}, {"待计算",new[]{"待計算","Pending"}}
+    {"病理报告 → 分型核对 → 方案查阅 → 剂量核对",new[]{"病理報告 → 分型核對 → 方案查閱 → 劑量核對","Report → Receptor review → Regimens → Dose verification"}}, {"新患者 / 清空本次",new[]{"新患者 / 清空本次","New patient / Clear case"}}, {"方案与推荐摘要",new[]{"方案與推薦摘要","Regimens and summaries"}}, {"本次计算参数",new[]{"本次計算參數","Calculation parameters"}}, {"体表面积 BSA",new[]{"體表面積 BSA","Body surface area (BSA)"}}, {"离线处理 · 报告不保存",new[]{"離線處理 · 報告不保存","Offline · Reports are not saved"}}, {"治疗阶段",new[]{"治療階段","Treatment setting"}}, {"疗程",new[]{"療程","Duration / cycles"}}, {"出处",new[]{"出處","Source"}}, {"待计算",new[]{"待計算","Pending"}}
    };
    string[] pair;if(words.TryGetValue(text,out pair))return currentLanguage=="en"?pair[1]:currentLanguage=="zh-Hant"?pair[0]:text;
    return (string)Call(new {op="translate",text=text,language=currentLanguage});
   }
   Control Labelled(Control c,string text){labels[c]=text;c.Text=T(text);return c;}
   Label Label(string text){return (Label)Labelled(new Label {AutoSize=true,MaximumSize=new Size(700,0),Margin=new Padding(4,7,4,4)},text);}
-  Button Button(string text,Action action){var b=(Button)Labelled(new Button {AutoSize=true,MinimumSize=new Size(88,30),Margin=new Padding(3),FlatStyle=FlatStyle.Flat,BackColor=Color.White,ForeColor=Color.FromArgb(34,93,114)},text);b.FlatAppearance.BorderColor=Color.FromArgb(220,226,231);b.Click+=(s,e)=>Guard(action);return b;}
+  Button Button(string text,Action action){var b=(Button)Labelled(new Button {AutoSize=true,MinimumSize=new Size(88,30),Margin=new Padding(3),FlatStyle=FlatStyle.Flat,BackColor=Color.White,ForeColor=Color.FromArgb(13,100,156)},text);b.FlatAppearance.BorderColor=Color.FromArgb(220,239,250);b.Click+=(s,e)=>Guard(action);return b;}
   void Guard(Action action){try{action();}catch(Exception e){InvalidateDose();MessageBox.Show(this,e.Message,T("请核对"),MessageBoxButtons.OK,MessageBoxIcon.Warning);}}
   FlowLayoutPanel Flow(){return new FlowLayoutPanel {Dock=DockStyle.Fill,AutoSize=true,WrapContents=true,Padding=new Padding(3)};}
   TableLayoutPanel Table(){return new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=1,AutoScroll=true,Padding=new Padding(6)};}
@@ -112,20 +122,31 @@ namespace ChemoDose.Legacy {
   void ReportsChanged(){if(updating)return;parsed=null;evidence.Clear();InvalidateMatch();}
   public LegacyWindow(string[] arguments) {
    args=arguments; catalogue=D(Call(new {op="catalogue"}));allEntries=A(catalogue["regimens"]).Concat(A(catalogue["referenceCards"])).ToArray();
-   Font=new Font("Tahoma",9);ForeColor=Color.FromArgb(38,55,70);BackColor=Color.White;ClientSize=new Size(1100,760);MinimumSize=new Size(780,600);AutoScaleMode=AutoScaleMode.Font;StartPosition=FormStartPosition.CenterScreen;
-   var root=Table();root.AutoScroll=false;root.Padding=new Padding(10);Controls.Add(root);
-   var top=Flow();top.BackColor=Color.White;var title=Label("乳腺癌剂量计算");title.Font=new Font(Font,FontStyle.Bold);top.Controls.Add(title);
-   language.DropDownStyle=ComboBoxStyle.DropDownList;language.Items.AddRange(new object[]{new Choice("zh-Hans","简体中文"),new Choice("zh-Hant","繁體中文"),new Choice("en","English")});language.Width=130;
-   language.SelectedIndex=0;top.Controls.Add(language);top.Controls.Add(Button("清除本次病例",ClearCase));
-   help.DropDownStyle=ComboBoxStyle.DropDownList;help.Width=180;top.Controls.Add(help);
-   help.SelectedIndexChanged+=(s,e)=>{if(help.SelectedIndex<=0)return;string key=Key(help);help.SelectedIndex=0;Guard(()=>{if(key=="licence")MessageBox.Show(this,EngineBridge.Resource("LICENSE.txt"),T("非商业学术授权"));else ShowText(T("第三方许可"),EngineBridge.Resource("Jint-LICENSE.txt"));});};
-   Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");
-   Row(root,top,false);Row(root,tabs,true);BuildCatalogue();BuildReports();
-   var notice=Label("仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch");notice.Font=new Font("Tahoma",8);notice.ForeColor=Color.FromArgb(101,114,124);Row(root,notice,false);
+   Font=new Font("Tahoma",9);ForeColor=Color.FromArgb(23,50,74);BackColor=Color.FromArgb(243,249,253);ClientSize=new Size(1280,820);MinimumSize=new Size(1000,680);AutoScaleMode=AutoScaleMode.Font;StartPosition=FormStartPosition.CenterScreen;
+   var root=Table();root.AutoScroll=false;root.Padding=Padding.Empty;Controls.Add(root);
+   var top=new TableLayoutPanel {Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,BackColor=Color.FromArgb(7,59,97),Padding=new Padding(18,12,18,12)};
+   top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));top.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+   var brand=Table();brand.AutoScroll=false;brand.BackColor=top.BackColor;brand.Padding=Padding.Empty;
+   var title=Label("乳腺癌剂量计算");title.Font=new Font("Tahoma",16,FontStyle.Bold);title.ForeColor=Color.White;title.Margin=Padding.Empty;Row(brand,title,false);
+   var subtitle=Label("病理报告 → 分型核对 → 方案查阅 → 剂量核对");subtitle.ForeColor=Color.FromArgb(205,233,249);subtitle.Font=new Font("Tahoma",8);subtitle.Margin=new Padding(0,5,0,0);Row(brand,subtitle,false);top.Controls.Add(brand,0,0);
+   var tools=Flow();tools.FlowDirection=FlowDirection.LeftToRight;tools.WrapContents=false;tools.BackColor=top.BackColor;
+   language.DropDownStyle=ComboBoxStyle.DropDownList;language.Items.AddRange(new object[]{new Choice("zh-Hans","简体中文"),new Choice("zh-Hant","繁體中文"),new Choice("en","English")});language.Width=112;language.Margin=new Padding(3,7,3,3);language.SelectedIndex=0;tools.Controls.Add(language);
+   var clear=Button("新患者 / 清空本次",ClearCase);clear.BackColor=Color.FromArgb(13,100,156);clear.ForeColor=Color.White;tools.Controls.Add(clear);
+   help.DropDownStyle=ComboBoxStyle.DropDownList;help.Width=115;help.Margin=new Padding(3,7,3,3);tools.Controls.Add(help);top.Controls.Add(tools,1,0);
+   help.SelectedIndexChanged+=(sender,e)=>{if(help.SelectedIndex<=0)return;string key=Key(help);help.SelectedIndex=0;Guard(()=>{if(key=="licence")MessageBox.Show(this,EngineBridge.Resource("LICENSE.txt"),T("非商业学术授权"));else ShowText(T("第三方许可"),EngineBridge.Resource("Jint-LICENSE.txt"));});};
+   Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");help.Width=115;
+   var body=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,Margin=Padding.Empty};body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,165));body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+   var nav=Table();nav.AutoScroll=false;nav.Padding=new Padding(8,18,8,10);nav.BackColor=Color.FromArgb(10,79,126);
+   var navTitle=Label("治疗阶段");navTitle.ForeColor=Color.FromArgb(191,228,247);Row(nav,navTitle,false);
+   var report=NavigationButton("报告识别与病理匹配",()=>tabs.SelectedIndex=1);navButtons["report"]=report;Row(nav,report,false);
+   foreach(string key in new[]{"术前新辅助治疗","术后辅助治疗","后续内分泌治疗","保乳术后治疗"}) {string item=key;var button=NavigationButton(item,()=>{for(int i=0;i<section.Items.Count;i++)if(((Choice)section.Items[i]).Key==item){section.SelectedIndex=i;break;}tabs.SelectedIndex=0;});navButtons[item]=button;Row(nav,button,false);}
+   var offline=Label("离线处理 · 报告不保存");offline.ForeColor=Color.FromArgb(191,228,247);offline.MaximumSize=new Size(140,0);offline.Font=new Font("Tahoma",8);Row(nav,offline,true);
+   body.Controls.Add(nav,0,0);tabs.Margin=new Padding(8);body.Controls.Add(tabs,1,0);Row(root,top,false);Row(root,body,true);BuildCatalogue();BuildReports();tabs.SelectedIndexChanged+=(sender,e)=>SynchronizeNavigation();
+   var notice=Label("仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch");notice.Font=new Font("Tahoma",8);notice.ForeColor=Color.FromArgb(96,119,138);notice.MaximumSize=new Size(0,0);notice.Margin=new Padding(12,5,12,5);Row(root,notice,false);
    language.SelectedIndexChanged+=(s,e)=>ChangeLanguage();
    string pref=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ChemoDose","legacy-language.txt");
    if(!args.Contains("--self-test"))try{if(File.Exists(pref)&&new FileInfo(pref).Length<30){string saved=File.ReadAllText(pref).Trim();for(int i=0;i<language.Items.Count;i++)if(((Choice)language.Items[i]).Key==saved)language.SelectedIndex=i;}}catch(IOException){}catch(UnauthorizedAccessException){}
-   ChangeLanguage();Shown+=(s,e)=>{if(args.Contains("--self-test"))BeginInvoke(new Action(SelfTest));};
+   ChangeLanguage();section.SelectedIndex=1;Shown+=(s,e)=>{if(args.Contains("--self-test"))BeginInvoke(new Action(SelfTest));};
    Activated+=(s,e)=>{if(clipboardWatch.Checked&&!args.Contains("--self-test"))Guard(()=>ImportClipboard(true));};
   }
   void ShowText(string title,string value) {
@@ -139,29 +160,49 @@ namespace ChemoDose.Legacy {
    box.Controls.Add(Label(title));input.Width=width;box.Controls.Add(input);
    input.TextChanged+=(s,e)=>{if(input==height||input==weight||input==renal)renalConfirmed.Checked=false;InvalidateDose();};return box;
   }
+  Button NavigationButton(string text,Action action) {
+   var button=Button(text,action);button.AutoSize=false;button.Dock=DockStyle.Fill;button.Height=52;button.Margin=Padding.Empty;button.TextAlign=ContentAlignment.MiddleLeft;button.Padding=new Padding(8,0,4,0);button.BackColor=Color.FromArgb(10,79,126);button.ForeColor=Color.White;button.FlatAppearance.BorderSize=0;return button;
+  }
+  void SynchronizeNavigation() {
+   foreach(var pair in navButtons)pair.Value.BackColor=(tabs.SelectedIndex==1?pair.Key=="report":pair.Key==Key(section))?Color.FromArgb(13,100,156):Color.FromArgb(10,79,126);
+  }
+  void LayoutSchemeButtons() {
+   int width=Math.Max(160,schemeList.ClientSize.Width-24);
+   foreach(var button in schemeButtons.Values){button.Width=width;button.Height=Math.Max(34,TextRenderer.MeasureText(button.Text,Font,new Size(width-20,0),TextFormatFlags.WordBreak|TextFormatFlags.NoPadding).Height+16);}
+  }
+  void RefreshSchemeButtons() {
+   var old=schemeList.Controls.Cast<Control>().ToArray();schemeList.Controls.Clear();foreach(var c in old)c.Dispose();schemeButtons.Clear();
+   foreach(Choice choice in entries.Items) {
+    string id=choice.Key;var button=new Button {Text=choice.Label,TextAlign=ContentAlignment.MiddleLeft,FlatStyle=FlatStyle.Flat,Margin=new Padding(0,0,0,1),Padding=new Padding(8,4,8,4),UseVisualStyleBackColor=false};button.FlatAppearance.BorderSize=0;
+    button.Click+=(sender,e)=>Guard(()=>{for(int i=0;i<entries.Items.Count;i++)if(((Choice)entries.Items[i]).Key==id){entries.SelectedIndex=i;break;}});schemeButtons[id]=button;schemeList.Controls.Add(button);
+   }
+   LayoutSchemeButtons();UpdateSchemeSelection();SynchronizeNavigation();
+  }
+  void UpdateSchemeSelection() {
+   foreach(var pair in schemeButtons){bool active=selected!=null&&S(selected,"id")==pair.Key;pair.Value.BackColor=active?Color.FromArgb(13,100,156):Color.White;pair.Value.ForeColor=active?Color.White:ForeColor;}
+  }
   void BuildCatalogue() {
-   var tab=(TabPage)Labelled(new TabPage {BackColor=Color.White},"内置方案");tabs.TabPages.Add(tab);var table=Table();tab.Controls.Add(table);
-   var filters=Flow();filters.Controls.Add(Label("治疗栏目"));filters.Controls.Add(section);filters.Controls.Add(Label("受体分型"));filters.Controls.Add(subtype);Input(filters,"搜索",query,165);Row(table,filters,false);
-   var pickerRow=new TableLayoutPanel {Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,Padding=new Padding(3,4,3,6)};
-   pickerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));pickerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));pickerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-   pickerRow.Controls.Add(Label("选择方案"),0,0);entryPicker.DropDownStyle=ComboBoxStyle.DropDownList;entryPicker.Dock=DockStyle.Fill;entryPicker.DropDownWidth=720;pickerRow.Controls.Add(entryPicker,1,0);pickerRow.Controls.Add(Button("方案详情",()=>{if(selected!=null)ShowText(T(S(selected,"name")),detail.Text);}),2,0);Row(table,pickerRow,false);
-   entryPicker.SelectedIndexChanged+=(s,e)=>{if(!updating&&entryPicker.SelectedItem is Choice){entries.SelectedIndex=entryPicker.SelectedIndex;}};
-   entries.SelectedIndexChanged+=(s,e)=>{if(!updating&&entries.SelectedItem is Choice)SelectEntry(((Choice)entries.SelectedItem).Key);};
-   section.SelectedIndexChanged+=(s,e)=>{if(!updating)FilterEntries();};subtype.SelectedIndexChanged+=(s,e)=>{if(!updating)FilterEntries();};query.TextChanged+=(s,e)=>{if(!updating)FilterEntries();};
-   selectedTitle.Font=new Font(Font,FontStyle.Bold);selectedTitle.Padding=new Padding(6);Row(table,selectedTitle,false);
-   patientInputs.Controls.Add(InputField("身高（cm）",height,115));patientInputs.Controls.Add(InputField("体重（kg）",weight,115));patientInputs.Controls.Add(InputField("肾功能（mL/min）",renal,145));patientInputs.Controls.Add(InputField("本次核对人",reviewer,180));Row(table,patientInputs,false);
-   Labelled(renalConfirmed,"请确认肾功能参数的单位和适用性。");renalConfirmed.AutoSize=true;renalConfirmed.Margin=new Padding(6,3,6,6);renalConfirmed.CheckedChanged+=(s,e)=>InvalidateDose();Row(table,renalConfirmed,false);
-   Row(table,alternativesPanel,false);Labelled(confirmed,"请先核对所选方案、分阶段用药及本次参数，然后勾选确认。");confirmed.AutoSize=true;confirmed.Margin=new Padding(6,3,6,6);confirmed.CheckedChanged+=(s,e)=>InvalidateOutput();Row(table,confirmed,false);
-   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(s,e)=>Guard(()=>{if(summary!=null){Clipboard.SetText(summary);lastClipboard=summary;}});actions.Controls.Add(copy);actions.Controls.Add(Button("查看完整核对单",()=>{if(summary!=null)ShowText(T("算术核对单（非处方）"),summary);}));Row(table,actions,false);
+   var tab=new Panel {BackColor=Color.FromArgb(243,249,253)};tabs.AddPage(tab);var table=Table();table.AutoScroll=false;table.Padding=Padding.Empty;tab.Controls.Add(table);
+   var patient=Table();patient.AutoScroll=false;patient.AutoSize=true;patient.BackColor=Color.White;patient.Padding=new Padding(10,6,10,6);var patientTitle=Label("本次计算参数");patientTitle.Font=new Font(Font,FontStyle.Bold);patientTitle.ForeColor=Color.FromArgb(10,79,126);Row(patient,patientTitle,false);
+   patientInputs.Controls.Add(InputField("身高（cm）",height,105));patientInputs.Controls.Add(InputField("体重（kg）",weight,105));patientInputs.Controls.Add(InputField("肾功能（mL/min）",renal,130));patientInputs.Controls.Add(InputField("本次核对人",reviewer,160));
+   var bsa=Flow();bsa.FlowDirection=FlowDirection.TopDown;bsa.WrapContents=false;bsa.AutoSize=true;bsa.Dock=DockStyle.None;bsa.Controls.Add(Label("体表面积 BSA"));bsa.Controls.Add(bsaLabel);patientInputs.Controls.Add(bsa);Row(patient,patientInputs,false);
+   Labelled(renalConfirmed,"请确认肾功能参数的单位和适用性。");renalConfirmed.AutoSize=true;renalConfirmed.Margin=new Padding(6,3,6,3);renalConfirmed.CheckedChanged+=(sender,e)=>InvalidateDose();Row(patient,renalConfirmed,false);
+   Labelled(confirmed,"请先核对所选方案、分阶段用药及本次参数，然后勾选确认。");confirmed.AutoSize=true;confirmed.Margin=new Padding(6,3,6,3);confirmed.CheckedChanged+=(sender,e)=>InvalidateOutput();Row(patient,confirmed,false);
+   var actions=Flow();actions.Controls.Add(Button("计算",Calculate));Labelled(copy,"复制核对单");copy.AutoSize=true;copy.Enabled=false;copy.Click+=(sender,e)=>Guard(()=>{if(summary!=null){Clipboard.SetText(summary);lastClipboard=summary;}});actions.Controls.Add(copy);actions.Controls.Add(Button("查看完整核对单",()=>{if(summary!=null)ShowText(T("算术核对单（非处方）"),summary);}));Row(patient,actions,false);Row(table,patient,false);
+   var columns=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,Margin=new Padding(0,8,0,0)};columns.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,225));columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+   var catalog=Table();catalog.AutoScroll=false;catalog.BackColor=Color.White;catalog.Padding=new Padding(8);var catalogTitle=Label("方案与推荐摘要");catalogTitle.Font=new Font(Font,FontStyle.Bold);catalogTitle.ForeColor=Color.FromArgb(10,79,126);Row(catalog,catalogTitle,false);
+   Row(catalog,Label("搜索"),false);query.Dock=DockStyle.Fill;Row(catalog,query,false);Row(catalog,Label("受体分型"),false);subtype.Dock=DockStyle.Fill;Row(catalog,subtype,false);Row(catalog,schemeList,true);schemeList.SizeChanged+=(sender,e)=>LayoutSchemeButtons();columns.Controls.Add(catalog,0,0);
+   entries.SelectedIndexChanged+=(sender,e)=>{if(!updating&&entries.SelectedItem is Choice)SelectEntry(((Choice)entries.SelectedItem).Key);};section.SelectedIndexChanged+=(sender,e)=>{if(!updating)FilterEntries();};subtype.SelectedIndexChanged+=(sender,e)=>{if(!updating)FilterEntries();};query.TextChanged+=(sender,e)=>{if(!updating)FilterEntries();};
+   var right=Table();right.AutoScroll=false;right.BackColor=Color.White;right.Padding=new Padding(10);selectedTitle.Font=new Font(Font,FontStyle.Bold);selectedTitle.ForeColor=Color.FromArgb(10,79,126);selectedTitle.Padding=new Padding(4);Row(right,selectedTitle,false);
+   brief.BackColor=Color.FromArgb(243,249,253);brief.BorderStyle=BorderStyle.None;brief.Height=86;brief.Dock=DockStyle.Fill;brief.ScrollBars=ScrollBars.Vertical;Row(right,brief,false);Row(right,alternativesPanel,false);
    drugGrid.Dock=DockStyle.Fill;drugGrid.ReadOnly=true;drugGrid.AllowUserToAddRows=false;drugGrid.AllowUserToDeleteRows=false;drugGrid.RowHeadersVisible=false;drugGrid.BackgroundColor=Color.White;drugGrid.BorderStyle=BorderStyle.FixedSingle;drugGrid.AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill;drugGrid.AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.AllCells;drugGrid.SelectionMode=DataGridViewSelectionMode.FullRowSelect;drugGrid.MultiSelect=false;
-   drugGrid.DefaultCellStyle.WrapMode=DataGridViewTriState.True;drugGrid.DefaultCellStyle.Padding=new Padding(4,5,4,5);drugGrid.DefaultCellStyle.SelectionBackColor=Color.FromArgb(231,240,244);drugGrid.DefaultCellStyle.SelectionForeColor=ForeColor;drugGrid.GridColor=Color.FromArgb(220,226,231);drugGrid.EnableHeadersVisualStyles=false;drugGrid.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(245,247,249);drugGrid.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;drugGrid.ColumnHeadersHeightSizeMode=DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-   string[] headers={"阶段","药物","标准剂量","计算量","给药日","疗程","出处"};float[] widths={70,115,120,155,100,110,95};
-   for(int i=0;i<headers.Length;i++){int index=drugGrid.Columns.Add("drug-"+i,T(headers[i]));drugGrid.Columns[index].FillWeight=widths[i];drugGrid.Columns[index].MinimumWidth=65;drugGrid.Columns[index].SortMode=DataGridViewColumnSortMode.NotSortable;drugGrid.Columns[index].Tag=headers[i];}
-   var display=new Panel {Dock=DockStyle.Fill,MinimumSize=new Size(0,200)};display.Controls.Add(drugGrid);display.Controls.Add(detail);Row(table,display,true);
-   Row(table,Label("数值为每次给药量；不相加各药或各阶段。区间保留，不自动取中值。"),false);
+   drugGrid.DefaultCellStyle.WrapMode=DataGridViewTriState.True;drugGrid.DefaultCellStyle.Padding=new Padding(3,5,3,5);drugGrid.DefaultCellStyle.SelectionBackColor=Color.FromArgb(13,100,156);drugGrid.DefaultCellStyle.SelectionForeColor=Color.White;drugGrid.GridColor=Color.FromArgb(220,239,250);drugGrid.EnableHeadersVisualStyles=false;drugGrid.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(220,239,250);drugGrid.ColumnHeadersDefaultCellStyle.ForeColor=Color.FromArgb(7,59,97);drugGrid.ColumnHeadersHeightSizeMode=DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+   string[] headers={"阶段","药物","标准剂量","计算量","给药日","疗程","出处"};float[] widths={65,100,110,140,90,85,90};
+   for(int i=0;i<headers.Length;i++){int index=drugGrid.Columns.Add("drug-"+i,T(headers[i]));drugGrid.Columns[index].FillWeight=widths[i];drugGrid.Columns[index].MinimumWidth=48;drugGrid.Columns[index].SortMode=DataGridViewColumnSortMode.NotSortable;drugGrid.Columns[index].Tag=headers[i];}
+   var display=new Panel {Dock=DockStyle.Fill,MinimumSize=new Size(0,180)};display.Controls.Add(drugGrid);display.Controls.Add(detail);Row(right,display,true);Row(right,Label("数值为每次给药量；不相加各药或各阶段。区间保留，不自动取中值。"),false);columns.Controls.Add(right,1,0);Row(table,columns,true);
   }
   void RenderDrugs(Dictionary<string,object> result) {
-   drugGrid.Rows.Clear();bool dose=selected!=null&&selected.ContainsKey("drugs");drugGrid.Visible=dose;detail.Visible=!dose;patientInputs.Visible=dose;confirmed.Visible=dose;
+   drugGrid.Rows.Clear();bsaLabel.Text="—";if(result!=null)foreach(var row in A(result["rows"])) {var basis=D(D(D(row)["result"])["basis"]);if(basis.ContainsKey("bsaM2")){bsaLabel.Text=Convert.ToDouble(basis["bsaM2"]).ToString("F3",System.Globalization.CultureInfo.InvariantCulture)+" m²";break;}}bool dose=selected!=null&&selected.ContainsKey("drugs");drugGrid.Visible=dose;detail.Visible=!dose;patientInputs.Parent.Visible=dose;patientInputs.Visible=dose;confirmed.Visible=dose;
    bool auc=dose&&A(selected["drugs"]).Any(o=>S(D(o),"kind")=="auc");if(renal.Parent!=null)renal.Parent.Visible=auc;renalConfirmed.Visible=auc;
    if(!dose)return;
    foreach(var o in A(selected["drugs"])) {
@@ -173,7 +214,7 @@ namespace ChemoDose.Legacy {
    drugGrid.ClearSelection();
   }
   void BuildReports() {
-   var tab=(TabPage)Labelled(new TabPage(),"报告识别与病理匹配");tabs.TabPages.Add(tab);var table=Table();tab.Controls.Add(table);
+   var tab=new Panel();tabs.AddPage(tab);var table=Table();tab.Controls.Add(table);
    Row(table,Label("此 x86 兼容版支持剪贴板文字与药物目录弹窗；截图 OCR 请使用新版 Windows、Mac 或安卓版本。"),false);
    var imports=Flow();imports.Controls.Add(Button("从剪贴板导入",()=>ImportClipboard(false)));Labelled(clipboardWatch,"本次窗口返回前台时自动导入新的病理剪贴板内容");imports.Controls.Add(clipboardWatch);Row(table,imports,false);
    string[] titles={"穿刺/术前病理","术后大病理","免疫组化","HER2 FISH/ISH"};
@@ -190,7 +231,7 @@ namespace ChemoDose.Legacy {
   }
   void ChangeLanguage() {
    updating=true;currentLanguage=Key(language);foreach(var pair in labels)pair.Key.Text=T(pair.Value);
-   Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");
+   Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");help.Width=115;
    Text=T("乳腺癌剂量计算")+" · "+Version;foreach(DataGridViewColumn column in drugGrid.Columns)column.HeaderText=T((string)column.Tag);
    var sections=allEntries.Select(o=>S(D(o),"section")).Distinct().ToArray();
    var subtypes=allEntries.Select(o=>S(D(o),"subtype")).Distinct().ToArray();
@@ -200,12 +241,13 @@ namespace ChemoDose.Legacy {
    if(!args.Contains("--self-test"))try {string pref=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ChemoDose","legacy-language.txt");Directory.CreateDirectory(Path.GetDirectoryName(pref));File.WriteAllText(pref,currentLanguage,Encoding.UTF8);}catch(IOException){}catch(UnauthorizedAccessException){}
   }
   void FilterEntries() {
-   string previous=selected==null?"":S(selected,"id");updating=true;entries.Items.Clear();entryPicker.Items.Clear();
+   string previous=selected==null?"":S(selected,"id");updating=true;entries.Items.Clear();
    foreach(var o in allEntries){var r=D(o);string searchable=S(r,"name")+" "+S(r,"subtype");if(r.ContainsKey("drugs"))searchable+=" "+String.Join(" ",A(r["drugs"]).Select(d=>S(D(d),"name")).ToArray());
-    if((Key(section)==""||Key(section)==S(r,"section"))&&(Key(subtype)==""||Key(subtype)==S(r,"subtype"))&&(query.Text.Trim()==""||(searchable+" "+T(searchable)).IndexOf(query.Text.Trim(),StringComparison.OrdinalIgnoreCase)>=0)){var choice=new Choice(S(r,"id"),T(S(r,"name")));entries.Items.Add(choice);entryPicker.Items.Add(choice);}}
-   updating=false;selected=null;detail.Clear();selectedTitle.Text="";alternatives.Clear();alternativesPanel.Controls.Clear();InvalidateDose();
+    if((Key(section)==""||Key(section)==S(r,"section"))&&(Key(subtype)==""||Key(subtype)==S(r,"subtype"))&&(query.Text.Trim()==""||(searchable+" "+T(searchable)).IndexOf(query.Text.Trim(),StringComparison.OrdinalIgnoreCase)>=0)){var choice=new Choice(S(r,"id"),T(S(r,"name")));entries.Items.Add(choice);}}
+   updating=false;selected=null;detail.Clear();brief.Clear();selectedTitle.Text="";alternatives.Clear();alternativesPanel.Controls.Clear();InvalidateDose();
    for(int i=0;i<entries.Items.Count;i++)if(((Choice)entries.Items[i]).Key==previous){entries.SelectedIndex=i;break;}
    if(entries.SelectedIndex<0&&entries.Items.Count>0)entries.SelectedIndex=0;
+   RefreshSchemeButtons();
   }
   string Source(Dictionary<string,object> r){return T((string)Call(new {op="source",entry=r}));}
   void OpenCatalogueEntry(string id) {
@@ -220,8 +262,8 @@ namespace ChemoDose.Legacy {
     var d=D(o);text.Add("["+T(S(d,"phaseLabel"))+"] "+T(S(d,"name"))+"\r\n"+T((string)Call(new {op="standard",drug=d}))+"\r\n"+T(S(d,"schedule"))+"; "+T(S(d,"duration"))+"\r\n"+T(S(d,"note"))+"\r\n"+Source(d));
     if(S(d,"kind")=="fixed_alt") {alternativesPanel.Controls.Add(Label(T(S(d,"name"))));var c=new ComboBox();alternatives[S(d,"id")]=c;var schedules=A(d["schedules"]).Select(Convert.ToString).ToArray();Options(c,new[]{"","0","1"},new[]{"请选择",schedules[0],schedules[1]},"");c.SelectedIndexChanged+=(s,e)=>InvalidateDose();alternativesPanel.Controls.Add(c);}
    }
-   detail.Text=String.Join("\r\n\r\n",text.ToArray());selectedTitle.Text=T(S(selected,"name"));
-   bool wasUpdating=updating;updating=true;for(int i=0;i<entryPicker.Items.Count;i++)if(((Choice)entryPicker.Items[i]).Key==id){entryPicker.SelectedIndex=i;entries.SelectedIndex=i;break;}updating=wasUpdating;RenderDrugs(null);
+   detail.Text=String.Join("\r\n\r\n",text.ToArray());selectedTitle.Text=T(S(selected,"name"));brief.Text=String.Join("\r\n",new[]{T(S(selected,"subtype"))+" · "+T(S(selected,"level")),T(S(selected,"eligibility")),T(S(selected,"notes")),Source(selected)});
+   bool wasUpdating=updating;updating=true;for(int i=0;i<entries.Items.Count;i++)if(((Choice)entries.Items[i]).Key==id){entries.SelectedIndex=i;break;}updating=wasUpdating;UpdateSchemeSelection();SynchronizeNavigation();RenderDrugs(null);
   }
   object NumberInput(TextBox input){double value;if(String.IsNullOrWhiteSpace(input.Text))return null;return Double.TryParse(input.Text,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out value)?(object)value:"invalid";}
   void Calculate() {
@@ -288,25 +330,25 @@ namespace ChemoDose.Legacy {
   void SelfTest() {
    bool passed=false;string error="";try {
     for(int l=0;l<3;l++) {
-     language.SelectedIndex=l;SelectEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();if(!output.Text.Contains("600.00"))throw new Exception("TCbHP calculation");
+     language.SelectedIndex=l;OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();if(!output.Text.Contains("600.00"))throw new Exception("TCbHP calculation");
      Clipboard.SetText(summary);if(Clipboard.GetText()!=summary)throw new Exception("Clipboard");weight.Text="61";if(copy.Enabled||output.Text.Length!=0||confirmed.Checked)throw new Exception("Stale calculation");
      reports["biopsy"].Text="ER 80%; PR 20%; HER2 3+; Ki-67 30%";Parse();phase.SelectedIndex=1;menopause.SelectedIndex=1;surgery.SelectedIndex=1;nodes.SelectedIndex=1;reportReviewed.Checked=true;Match();if(matches.Items.Count==0)throw new Exception("Report match");
      reports["biopsy"].AppendText("; HER2 1+");if(parsed!=null||lastMatch!=null||matches.Items.Count!=0)throw new Exception("Stale report");ClearCase();
-     SelectEntry("c003");if(String.IsNullOrWhiteSpace(S(selected,"body"))||!detail.Text.Contains(T(S(selected,"body"))))throw new Exception("Reference card body");
+     OpenCatalogueEntry("c003");if(String.IsNullOrWhiteSpace(S(selected,"body"))||!detail.Text.Contains(T(S(selected,"body"))))throw new Exception("Reference card body");
     }
-    OpenCatalogueEntry("r056");if(Key(entryPicker)!="r056"||S(selected,"id")!="r056")throw new Exception("Matched entry picker across settings");
-    entryPicker.SelectedIndex=0;if(S(selected,"id")!=Key(entryPicker))throw new Exception("Picker after opening a matched entry");
+    OpenCatalogueEntry("r056");if(!(entries.SelectedItem is Choice)||((Choice)entries.SelectedItem).Key!="r056"||S(selected,"id")!="r056")throw new Exception("Matched entry picker across settings");
+    schemeButtons[((Choice)entries.Items[0]).Key].PerformClick();if(S(selected,"id")!=((Choice)entries.SelectedItem).Key)throw new Exception("Picker after opening a matched entry");
     OpenCatalogueEntry("r001");
     int reportIndex=Array.IndexOf(args,"--test-report");
     for(int l=0;l<3;l++) {
-     language.SelectedIndex=l;SelectEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();
-     if(drugGrid.Rows.Count!=4||!Convert.ToString(drugGrid.Rows[1].Cells[3].Value).Contains("600.00"))throw new Exception("Compact grid calculated amount");
-     if(entryPicker.SelectedItem==null||Key(entryPicker)!="r001")throw new Exception("Compact picker selection");
+     language.SelectedIndex=l;OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();
+     if(drugGrid.Rows.Count!=4||!Convert.ToString(drugGrid.Rows[1].Cells[3].Value).Contains("600.00"))throw new Exception("Classic grid calculated amount");
+     if(!(entries.SelectedItem is Choice)||((Choice)entries.SelectedItem).Key!="r001"||schemeButtons["r001"].BackColor!=Color.FromArgb(13,100,156))throw new Exception("Classic visible list selection");
      if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+"."+Key(language)+".png");
      weight.Text="61";if(drugGrid.Rows.Cast<DataGridViewRow>().Any(r=>Convert.ToString(r.Cells[3].Value).Contains("600.00")))throw new Exception("Stale grid amount");
     }
-    ClientSize=new Size(1024,700);SelectEntry("r018");PerformLayout();
-    if(drugGrid.Rows.Count!=6||drugGrid.Width<700||drugGrid.Height<180||entryPicker.Width<400)throw new Exception("Compact layout on small display");
+    ClientSize=new Size(1024,700);OpenCatalogueEntry("r018");PerformLayout();
+    if(drugGrid.Rows.Count!=6||drugGrid.Width<500||drugGrid.Height<180||schemeList.Width<180||patientInputs.PointToScreen(Point.Empty).Y>=schemeList.PointToScreen(Point.Empty).Y)throw new Exception("Classic layout on small display");
     if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+".small.png");
     passed=true;
    }catch(Exception e){error=e.ToString();}

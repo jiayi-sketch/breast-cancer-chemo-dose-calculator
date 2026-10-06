@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 $ErrorActionPreference = 'Stop'
-$setup = "$PWD/build/release/ChemoDose-2.0.1-windows-setup.exe"
-$payload = "$PWD/build/release/ChemoDose-2.0.1-windows-unified.exe"
+$setup = "$PWD/build/release/ChemoDose-2.0.2-windows-setup.exe"
+$payload = "$PWD/build/release/ChemoDose-2.0.2-windows-unified.exe"
 $destination = Join-Path $env:LOCALAPPDATA 'ChemoDose Installer QA with spaces'
 $registry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ChemoDose'
 $settings = 'HKCU:\Software\jiayi-sketch\ChemoDose'
@@ -23,7 +23,7 @@ foreach ($pass in @('install','upgrade')) {
     if (-not (Test-Path (Join-Path $destination $name))) { throw "$pass missing $name" }
   }
   if ((Get-FileHash (Join-Path $destination 'ChemoDose.exe') -Algorithm SHA256).Hash -ne $hash) { throw 'Installed payload differs from tested portable EXE' }
-  if ((Get-ItemProperty $registry).DisplayVersion -ne '2.0.1') { throw 'Uninstall version incorrect' }
+  if ((Get-ItemProperty $registry).DisplayVersion -ne '2.0.2') { throw 'Uninstall version incorrect' }
   if ((Get-ItemProperty $settings).InstallLocation -ne $destination) { throw 'Installation location incorrect' }
   $shell = New-Object -ComObject WScript.Shell
   foreach ($shortcut in @($desktop,(Join-Path $startMenu 'ChemoDose.lnk'))) {
@@ -48,7 +48,7 @@ if (-not (Test-Path (Join-Path $destination 'keep.txt'))) { throw 'Uninstaller r
 if ((Test-Path $registry) -or (Test-Path $desktop) -or (Test-Path (Join-Path $startMenu 'ChemoDose.lnk'))) { throw 'Uninstall entry or shortcut remained' }
 if ((Get-Content (Join-Path $preferences 'language.json') | ConvertFrom-Json).language -ne 'zh-Hant' -or (Get-Content (Join-Path $preferences 'legacy-language.txt')).Trim() -ne 'zh-Hant') { throw 'Uninstaller removed language preferences' }
 $checks += @{operation='uninstall';passed=$true;unrelatedFileRetained=$true;languagePreferencesRetained=$true}
-@{passed=$true;version='2.0.1';host=[Environment]::OSVersion.VersionString;checks=$checks;xpWindows7DeviceTest='pending';note='Native hosted Windows tests; not old-system device or clinical validation.'} | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 build/verification/windows-installer-native.json
+@{passed=$true;version='2.0.2';host=[Environment]::OSVersion.VersionString;checks=$checks;xpWindows7DeviceTest='pending';note='Native hosted Windows tests; not old-system device or clinical validation.'} | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 build/verification/windows-installer-native.json
 $record=Get-Content build/release/windows-installer-build.json | ConvertFrom-Json
 $record.nativeInstallUpgradeUninstall='passed on GitHub-hosted Windows'
 $record | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 build/release/windows-installer-build.json
