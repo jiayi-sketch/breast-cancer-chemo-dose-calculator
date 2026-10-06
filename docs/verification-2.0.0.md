@@ -21,3 +21,16 @@
 验证脚本：`npm test`、`npm run test:ui`、`npm run test:ocr`、`npm run typecheck`，以及 `scripts/verify-windows-legacy-engine.mjs`。Windows `--self-test --test-report` 使用虚构数据。原文与截图不写患者日志；反馈只使用虚构资料。
 
 Windows 原生测试：[GitHub Actions 37316529674](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/actions/runs/37316529674)，代码提交 `65921e3a317326a9b5fd9ed1608a51b4a2df18aa`，2026-10-05。使用 Windows 托管测试环境，不等于所有 Win10/11 设备或旧 Windows 兼容版验收。发布附件保留该次虚构数据测试 JSON 和 OCR 弹窗截图。修复了 Windows 构建中内嵌 OCR 子目录的路径分隔符问题。
+
+## 作者提供的 Windows 真机验证（2026-10-06）
+
+作者确认两台电脑均测试了 `ChemoDose-2.0.0-windows-unified.exe`，并反馈以下环境验证通过：
+
+| 系统与架构 | 结果 | 证据来源 |
+| --- | --- | --- |
+| Windows 7 x86（32 位） | 作者反馈真机验证通过 | 作者在项目协作中的直接反馈 |
+| Windows 10 x64（64 位） | 作者反馈真机验证通过 | 作者在项目协作中的直接反馈 |
+
+该记录与自动化测试记录分别列示。作者尚未提供系统 SP/构建号、运行时版本、逐项功能清单、文件哈希或自检日志，故不将这次反馈扩展为所有功能、所有系统配置或临床验证通过。XP 真机验收仍待完成；临床复核状态不变。发布附件中的原验证 JSON 是构建时记录，本节补充其后收到的真机反馈，不修改原始记录或安装包。
+
+On October 6, 2026, the author confirmed that both devices used the unified Windows EXE and reported successful device verification on Windows 7 x86 and Windows 10 x64. OS service pack/build details, per-feature results, file hashes and self-test logs were not supplied. This author-reported result is recorded separately from automated test evidence and does not establish verification of every feature, configuration or clinical use. XP device acceptance remains pending.
