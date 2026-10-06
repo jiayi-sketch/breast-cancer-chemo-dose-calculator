@@ -186,7 +186,7 @@ namespace ChemoDose.Legacy {
    Labelled(specialReviewed,"低表达或不常见受体组合需要专项复核确认。");specialReviewed.AutoSize=true;Row(table,specialReviewed,false);
    foreach(var c in new[]{reportReviewed,specialReviewed})c.CheckedChanged+=(s,e)=>{lastMatch=null;matches.Items.Clear();InvalidateDose();};
    Row(table,Button("匹配方案目录",Match),false);Row(table,Label("仅按已核对的阶段和受体分型检索目录，不判断治疗指征、风险或患者适用性。"),false);
-   matches.Dock=DockStyle.Fill;Row(table,matches,true);Row(table,Button("打开所选目录条目",()=>{if(lastMatch==null||!(matches.SelectedItem is Choice))throw new Exception(T("请选择"));SelectEntry(((Choice)matches.SelectedItem).Key);tabs.SelectedIndex=0;}),false);
+   matches.Dock=DockStyle.Fill;Row(table,matches,true);Row(table,Button("打开所选目录条目",()=>{if(lastMatch==null||!(matches.SelectedItem is Choice))throw new Exception(T("请选择"));OpenCatalogueEntry(((Choice)matches.SelectedItem).Key);tabs.SelectedIndex=0;}),false);
   }
   void ChangeLanguage() {
    updating=true;currentLanguage=Key(language);foreach(var pair in labels)pair.Key.Text=T(pair.Value);
@@ -208,6 +208,11 @@ namespace ChemoDose.Legacy {
    if(entries.SelectedIndex<0&&entries.Items.Count>0)entries.SelectedIndex=0;
   }
   string Source(Dictionary<string,object> r){return T((string)Call(new {op="source",entry=r}));}
+  void OpenCatalogueEntry(string id) {
+   var target=allEntries.Select(D).First(r=>S(r,"id")==id);updating=true;query.Clear();subtype.SelectedIndex=0;
+   for(int i=0;i<section.Items.Count;i++)if(((Choice)section.Items[i]).Key==S(target,"section")){section.SelectedIndex=i;break;}
+   updating=false;FilterEntries();SelectEntry(id);
+  }
   void SelectEntry(string id) {
    selected=allEntries.Select(D).First(r=>S(r,"id")==id);InvalidateDose();alternatives.Clear();alternativesPanel.Controls.Clear();
    var text=new List<string>{T(S(selected,"name")),T(S(selected,"section"))+" / "+T(S(selected,"subtype")),T(S(selected,"level")),T(S(selected,"eligibility")),T(S(selected,"notes")),T(S(selected,"body")),Source(selected)};
@@ -289,6 +294,8 @@ namespace ChemoDose.Legacy {
      reports["biopsy"].AppendText("; HER2 1+");if(parsed!=null||lastMatch!=null||matches.Items.Count!=0)throw new Exception("Stale report");ClearCase();
      SelectEntry("c003");if(String.IsNullOrWhiteSpace(S(selected,"body"))||!detail.Text.Contains(T(S(selected,"body"))))throw new Exception("Reference card body");
     }
+    OpenCatalogueEntry("r056");if(Key(entryPicker)!="r056"||S(selected,"id")!="r056")throw new Exception("Matched entry picker across settings");
+    OpenCatalogueEntry("r001");
     int reportIndex=Array.IndexOf(args,"--test-report");
     for(int l=0;l<3;l++) {
      language.SelectedIndex=l;SelectEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();
