@@ -16,7 +16,7 @@ const catalogue = JSON.parse(readFileSync(new URL('data/catalogue.json', root), 
 writeFileSync(new URL('apps/shared-web/catalogue.browser.js', root),
   '/* Generated from data/catalogue.json. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ChemoCatalogue = ' + JSON.stringify(catalogue) + ';\n');
 const engine = readFileSync(new URL('packages/calculation-core/src/catalogue.mjs', root), 'utf8')
-  .replace(/^import .*;\n/gm, '').replace(/^export function /gm, 'function ');
+  .replace(/^import .*;\r?\n/gm, '').replace(/^export function /gm, 'function ');
 writeFileSync(new URL('apps/shared-web/catalogue-engine.browser.js', root),
   '/* Generated from catalogue.mjs. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.RegimenEngine = (function(){\n"use strict";\n' +
   'const {calculateDose} = window.DoseCore;\n' + engine +
