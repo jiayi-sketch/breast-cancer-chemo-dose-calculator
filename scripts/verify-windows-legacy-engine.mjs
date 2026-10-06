@@ -57,5 +57,5 @@ try {
   const normalizeNumbers=v=>typeof v==='number'?Number(v.toPrecision(14)):Array.isArray(v)?v.map(normalizeNumbers):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,normalizeNumbers(x)])):v;
   assert.deepEqual(normalizeNumbers(clean(got)),normalizeNumbers(clean(expected)),'Vector '+i+' '+q.op);
  }
- console.log(JSON.stringify({passed:true,vectors:requests.length,regimens:c.regimens.length,host:'macOS .NET 10 loading the actual net40 Jint DLL',windows7XpRuntime:'pending'}));
+ console.log(JSON.stringify({passed:true,vectors:requests.length,regimens:c.regimens.length,host:process.platform+' .NET 10 loading the actual net40 Jint DLL',windows7XpRuntime:'pending'}));
 }finally{rmSync(temp,{recursive:true,force:true});}

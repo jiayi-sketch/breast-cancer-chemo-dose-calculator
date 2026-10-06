@@ -1,76 +1,8 @@
-name: Unified Windows runtime verification
+name: Unified Windows verification (current installer workflow)
 on:
-  push:
-    branches: [codex/windows-unified]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  unified:
-    runs-on: windows-latest
-    timeout-minutes: 15
-    env:
-      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
-      DOTNET_NOLOGO: '1'
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '10.0.401'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-      - name: Fetch and verify original 2.0.0 engines
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force build/inputs | Out-Null
-          $items = @{
-            'ChemoDose-2.0.0-windows-x64.exe' = '9bd6a5a9e0472677a3b5c704bd1e35413b05be675a06daad44031d3135870886'
-            'ChemoDose-2.0.0-windows-x86-legacy.exe' = 'dc37aeab98534be27813f705dc72d56c30a288aa100243f50f917954469d74af'
-            'ChemoDose-2.0.0-windows-x86-legacy.exe.config' = 'c03bfb700cb332df4f19ea2aa3e59ec9915d5ec93a796d47907d99a39e254810'
-          }
-          foreach ($name in $items.Keys) {
-            Invoke-WebRequest "https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.0/$name" -OutFile "build/inputs/$name"
-            if ((Get-FileHash "build/inputs/$name" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $items[$name]) { throw "Hash mismatch: $name" }
-          }
-          Invoke-WebRequest https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net40/1.0.3/microsoft.netframework.referenceassemblies.net40.1.0.3.nupkg -OutFile build/inputs/net40.zip
-          if ((Get-FileHash build/inputs/net40.zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne '54d6e20a1b61caf79395d6d71d091265e81f5a5705ac4ae52af45ca143c3c694') { throw 'net40 hash mismatch' }
-          Expand-Archive build/inputs/net40.zip build/inputs/net40
-      - name: Build and inspect unified EXE
-        shell: pwsh
-        run: |
-          $dotnet = (Get-Command dotnet).Source
-          python scripts/build-windows-unified.py --dotnet $dotnet --references "$PWD/build/inputs/net40/build/.NETFramework/v4.0" --modern "$PWD/build/inputs/ChemoDose-2.0.0-windows-x64.exe" --legacy "$PWD/build/inputs/ChemoDose-2.0.0-windows-x86-legacy.exe" --legacy-config "$PWD/build/inputs/ChemoDose-2.0.0-windows-x86-legacy.exe.config" --output "$PWD/build/unified"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/test-windows-unified.py --dotnet $dotnet --output "$PWD/build/verification" --exe "$PWD/build/unified/ChemoDose-2.0.0-windows-unified.exe" --manifest "$PWD/build/unified/windows-unified-build.json"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Verify native launcher and both interfaces
-        shell: pwsh
-        run: |
-          $exe = "$PWD/build/unified/ChemoDose-2.0.0-windows-unified.exe"
-          $selection = "$PWD/build/verification/windows-selection.json"
-          $app = Start-Process $exe -ArgumentList "--describe --report `"$selection`"" -PassThru -Wait
-          if ($app.ExitCode -ne 0 -or -not (Test-Path $selection)) { throw 'Selection probe failed' }
-          if ((Get-Content $selection | ConvertFrom-Json).edition -ne 'modern') { throw 'Hosted Windows must select modern with WebView2 present' }
-          foreach ($mode in @('modern','compat')) {
-            $report = "$PWD/build/verification/windows $mode self-test.json"
-            $arguments = "--self-test --test-report `"$report`""
-            if ($mode -eq 'compat') { $arguments = "--compat $arguments" }
-            $app = Start-Process $exe -ArgumentList $arguments -PassThru
-            if (-not $app.WaitForExit(150000)) { $app.Kill(); throw "$mode timed out" }
-            if ($app.ExitCode -ne 0 -or -not (Test-Path $report)) { throw "$mode test failed" }
-            $result = Get-Content $report | ConvertFrom-Json
-            if (-not $result.passed) { throw "$mode assertions failed" }
-          }
-          # This host is not an XP or Windows 7 acceptance environment.
-      - name: Preserve tested EXE and runtime evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-unified-verification
-          path: |
-            build/unified/ChemoDose-2.0.0-windows-unified.exe
-            build/unified/windows-unified-build.json
-            build/verification/*
-          if-no-files-found: warn
-          retention-days: 30
+  windows:
+    uses: ./.github/workflows/windows-compact-installer.yml

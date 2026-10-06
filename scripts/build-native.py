@@ -172,13 +172,14 @@ def android(args):
     return apk
 
 def windows(args):
+    windows_version = json.loads((ROOT / 'apps/windows/version.json').read_text())['version']
     build = args.work / 'windows'
     published = build / 'publish'
     run(args.dotnet, 'publish', ROOT / 'apps/windows/ChemoDose.Windows.csproj',
         '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true',
         '--artifacts-path', build / 'artifacts', '-o', published,
         '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true')
-    exe = args.output / f'ChemoDose-{VERSION}-windows-x64.exe'
+    exe = args.output / f'ChemoDose-{windows_version}-windows-x64.exe'
     shutil.copyfile(published / 'ChemoDose.exe', exe)
     return exe
 

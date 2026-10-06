@@ -1,7 +1,7 @@
-# Windows 统一入口（2.0.0）
+# Windows 统一入口（2.0.1）
 
-下载 `ChemoDose-2.0.0-windows-unified.exe` 后双击即可，不需要自行判断 x86 / x64。
-本文件包含两种已有界面，自动选择适合当前电脑的引擎，不改变方案、病理匹配或剂量计算规则。
+下载 `ChemoDose-2.0.1-windows-unified.exe` 后双击即可，不需要自行判断 x86 / x64。
+本文件包含两种紧凑界面，自动选择适合当前电脑的引擎，不改变方案、病理匹配或剂量计算规则。
 
 | 系统 | 默认打开的界面 | 图片 OCR |
 | --- | --- | --- |
@@ -12,7 +12,7 @@
 | XP SP3 x86 | x86 兼容界面 | 无 |
 
 这是程序的目标分流范围，不代表全部系统已经验收或仍获微软维护。
-2026-10-06，作者反馈：本统一 EXE 已在 Win7 x86 和 Win10 x64 真机验证通过。该记录来自作者反馈，系统补丁版本、测试步骤及逐项功能记录尚未提供；不代表所有配置或功能均已验收。XP 真机验收仍待完成；Windows ARM、Vista、XP x64 不在本包目标范围。
+2026-10-06，作者反馈：旧版 2.0.0 统一 EXE 已在 Win7 x86 和 Win10 x64 真机验证通过。该记录来自作者反馈，系统补丁版本、测试步骤及逐项功能记录尚未提供；不代表所有配置或功能均已验收。本次 2.0.1 界面修订与安装包需重新验收；XP 真机验收仍待完成；Windows ARM、Vista、XP x64 不在本包目标范围。
 旧系统仍须先安装微软 .NET Framework 4；没有捆绑或自动下载安装微软运行时。
 统一启动器使用 CLR4（现代 Windows 一般已有兼容的 .NET Framework 4.x），现代引擎仍自带 .NET 10。
 WebView2 仅为现代界面所需；未检测到时可直接使用文字导入及药物弹窗。
@@ -20,7 +20,7 @@ WebView2 仅为现代界面所需；未检测到时可直接使用文字导入�
 ## 使用
 
 第一次启动会将选中的程序组件解包到当前用户的
-`%LOCALAPPDATA%\ChemoDose\Bundles\2.0.0-<bundle-id>`，无需管理员权限。
+`%LOCALAPPDATA%\ChemoDose\Bundles\2.0.1-<bundle-id>`，无需管理员权限。
 以后每次启动校验组件长度和 SHA256；缺失或损坏时从本 EXE 重新解包。
 此目录保存程序、许可和说明，不保存患者资料。关闭全部程序后可手动删除该缓存目录；下次启动会重新生成。
 
@@ -31,9 +31,9 @@ WebView2 仅为现代界面所需；未检测到时可直接使用文字导入�
 技术自检（只用虚构数据）：
 
 ```bat
-ChemoDose-2.0.0-windows-unified.exe --self-test --test-report windows-unified-self-test.json
-ChemoDose-2.0.0-windows-unified.exe --compat --self-test --test-report windows-compat-self-test.json
-ChemoDose-2.0.0-windows-unified.exe --describe --report windows-selection.json
+ChemoDose-2.0.1-windows-unified.exe --self-test --test-report windows-unified-self-test.json
+ChemoDose-2.0.1-windows-unified.exe --compat --self-test --test-report windows-compat-self-test.json
+ChemoDose-2.0.1-windows-unified.exe --describe --report windows-selection.json
 ```
 
 `--describe` 只记录系统版本、架构、WebView2 检测及选择结果，不解包或启动引擎。
@@ -48,9 +48,9 @@ ChemoDose-2.0.0-windows-unified.exe --describe --report windows-selection.json
 python3 scripts/build-windows-unified.py \
   --dotnet /path/to/dotnet \
   --references /path/to/net40/build/.NETFramework/v4.0 \
-  --modern /path/to/ChemoDose-2.0.0-windows-x64.exe \
-  --legacy /path/to/ChemoDose-2.0.0-windows-x86-legacy.exe \
-  --legacy-config /path/to/ChemoDose-2.0.0-windows-x86-legacy.exe.config \
+  --modern /path/to/ChemoDose-2.0.1-windows-x64.exe \
+  --legacy /path/to/ChemoDose-2.0.1-windows-x86-legacy.exe \
+  --legacy-config /path/to/ChemoDose-2.0.1-windows-x86-legacy.exe.config \
   --output /path/to/releases
 ```
 
