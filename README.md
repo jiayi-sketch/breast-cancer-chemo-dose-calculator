@@ -32,6 +32,12 @@ This preview restores the original text-report workflow on all three platforms: 
 
 安装包为 `ChemoDose-2.0.0-android.apk`、`ChemoDose-2.0.0-macos-arm64.dmg` 和 `ChemoDose-2.0.0-windows-x64.exe`。新增 `ChemoDose-2.0.0-windows-x86-legacy.exe` 和对应运行配置文件，另有便于解压安装的兼容版 ZIP。本版安装包供技术测试，实际下载以 GitHub Releases 中已发布的附件为准。旧版 [1.0.3](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.3) 不含报告匹配功能。
 
+## Windows 统一入口
+
+新增 `ChemoDose-2.0.0-windows-unified.exe`，将现代 x64 与 x86 兼容引擎打入一个下载文件，按系统版本、架构和 WebView2 安装情况自动选择界面。用户无需自行区分位数；旧系统仍须 .NET Framework 4，兼容界面不含图片 OCR。目标范围不等于全部设备已验收，详见 [统一入口说明](docs/windows-unified.md)。下载以 Releases 附件为准，原分立附件继续保留。
+
+A unified Windows EXE bundles the existing modern x64 and x86 compatibility engines and selects the interface automatically. Legacy systems still require .NET Framework 4; image OCR is available only in the modern interface. See [unified Windows notes](docs/windows-unified.md) for prerequisites and validation status.
+
 ## 语言设置
 
 1.0.3 在 Windows、Mac 和 Android 页头提供 **简体中文 / 繁體中文 / English**。界面、方案名称、摘要、提示和复制核对单随语言切换。三端只保存语言偏好，不保存病例参数；切换语言会保留输入、清除旧结果并要求重新确认。药物数值、频次、出处及公式不变，完整 JSON 核对记录保留原始目录文字。翻译核对说明见 [语言核对记录](docs/language-review.md)。

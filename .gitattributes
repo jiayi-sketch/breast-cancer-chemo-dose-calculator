@@ -2,3 +2,10 @@
 apps/shared-web/** -text
 LICENSE text eol=lf
 apps/windows/licenses/* -text
+
+# Keep launcher documentation and build inputs deterministic across Windows/macOS.
+apps/windows-unified/** text eol=lf
+scripts/*windows-unified.py text eol=lf
+docs/windows-unified.md text eol=lf
+tests/windows-unified/** text eol=lf
+scripts/ci/windows-unified.workflow.yml text eol=lf
