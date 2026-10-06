@@ -14,8 +14,8 @@ if compiler != 'v3.13': raise SystemExit('Use pinned official NSIS v3.13.')
 a.output.mkdir(parents=True, exist_ok=True)
 setup = a.output.resolve()/f'ChemoDose-{version}-windows-setup.exe'
 license_file=a.output.resolve()/'installer-license-utf8.txt'
-license_file.write_text((ROOT/'LICENSE').read_text(),encoding='utf-8-sig')
-subprocess.run([str(a.makensis.resolve()), '/V3', f'/DVERSION={version}',
+license_file.write_text((ROOT/'LICENSE').read_text(encoding='utf-8'),encoding='utf-8-sig')
+subprocess.run([str(a.makensis.resolve()), '/V3', '/INPUTCHARSET', 'UTF8', f'/DVERSION={version}',
                f'/DPAYLOAD={a.unified.resolve()}', f'/DLICENCE={license_file}',
                f'/DDOCUMENTATION={ROOT/"docs/windows-installation.md"}', f'/DOUTPUT={setup}',
                str(ROOT/'apps/windows-installer/ChemoDose.nsi')], check=True)
