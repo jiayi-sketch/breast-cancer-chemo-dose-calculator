@@ -12,7 +12,7 @@ namespace ChemoDose.Windowing {
   Panel chrome;
   WindowButton minimize,maximize,close;
   string chromeLanguage="zh-Hans";
-  Rectangle normalBounds;FormWindowState previousState;bool restoringBounds,suppressNormalCapture,pendingRestore;
+  Rectangle normalBounds;FormWindowState nativeState;bool restoringBounds,suppressNormalCapture,pendingRestore;
   [DllImport("user32.dll")] static extern bool ReleaseCapture();
   [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd,int msg,IntPtr wParam,IntPtr lParam);
   [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr hwnd,int index);
@@ -47,26 +47,16 @@ namespace ChemoDose.Windowing {
    chromeLanguage=language;if(chrome==null)return;
    bool en=language=="en",traditional=language=="zh-Hant";
    minimize.AccessibleName=en?"Minimize":traditional?"最小化":"最小化";
-   maximize.AccessibleName=WindowState==FormWindowState.Maximized?(en?"Restore":traditional?"還原":"还原"):(en?"Maximize":traditional?"最大化":"最大化");
+   maximize.AccessibleName=nativeState==FormWindowState.Maximized?(en?"Restore":traditional?"還原":"还原"):(en?"Maximize":traditional?"最大化":"最大化");
    close.AccessibleName=en?"Close":traditional?"關閉":"关闭";
    foreach(var b in new[]{minimize,maximize,close})b.AccessibleDescription=b.AccessibleName;
-   maximize.Restore=WindowState==FormWindowState.Maximized;maximize.Invalidate();
+   maximize.Restore=nativeState==FormWindowState.Maximized;maximize.Invalidate();
   }
-  void SetWindowState(FormWindowState state){RememberNormalBounds();suppressNormalCapture=true;try{WindowState=state;}finally{suppressNormalCapture=false;}}
+  void SetWindowState(FormWindowState state){RememberNormalBounds();suppressNormalCapture=true;try{WindowState=state;}finally{suppressNormalCapture=false;RefreshChromeLanguage(chromeLanguage);}}
   void ToggleMaximize(){SetWindowState(WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized);}
   protected override void OnLocationChanged(EventArgs e){base.OnLocationChanged(e);RememberNormalBounds();}
-  void RememberNormalBounds(){if(!restoringBounds&&!suppressNormalCapture&&!pendingRestore&&WindowState==FormWindowState.Normal&&previousState==FormWindowState.Normal)normalBounds=Bounds;}
-  protected override void OnResize(EventArgs e){
-   base.OnResize(e);
-   // .NET 4 otherwise adds its old non-client metrics back when restoring a
-   // captionless window. Preserve the actual rectangle instead of that cache.
-   if(!restoringBounds&&!pendingRestore&&IsHandleCreated&&WindowState==FormWindowState.Normal&&previousState!=FormWindowState.Normal&&normalBounds.Width>0){
-    Rectangle target=normalBounds;pendingRestore=true;
-    // Run after Form.WindowState has finished restoring its own cached bounds.
-    BeginInvoke(new Action(()=>{try{if(!IsDisposed&&WindowState==FormWindowState.Normal){restoringBounds=true;Bounds=target;}}finally{restoringBounds=false;pendingRestore=false;RememberNormalBounds();}}));
-   }
-   previousState=WindowState;RememberNormalBounds();RefreshChromeLanguage(chromeLanguage);
-  }
+  void RememberNormalBounds(){if(!restoringBounds&&!suppressNormalCapture&&!pendingRestore&&nativeState==FormWindowState.Normal)normalBounds=Bounds;}
+  protected override void OnResize(EventArgs e){base.OnResize(e);RememberNormalBounds();RefreshChromeLanguage(chromeLanguage);}
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData) {
    if(keyData==(Keys.Alt|Keys.Space)){ReleaseCapture();SendMessage(Handle,0x112,new IntPtr(0xF100),new IntPtr(0x20));return true;}
    return base.ProcessCmdKey(ref msg,keyData);
@@ -83,12 +73,25 @@ namespace ChemoDose.Windowing {
    if(m.Msg==WM_NCCALCSIZE){m.Result=IntPtr.Zero;return;}
    if(m.Msg==WM_NCHITTEST){
     long position=m.LParam.ToInt64();var p=PointToClient(new Point((short)(position&0xffff),(short)((position>>16)&0xffff)));
-    int hit=ResizeHit(p,ClientSize,Padding.Left,WindowState==FormWindowState.Normal);
+    int hit=ResizeHit(p,ClientSize,Padding.Left,nativeState==FormWindowState.Normal);
     if(hit!=1){m.Result=new IntPtr(hit);return;}
+   }
+   // WM_SIZE is authoritative even while .NET 4's WindowState property still
+   // reports the previous value during synchronous native callbacks.
+   bool scheduleRestore=false;Rectangle target=normalBounds;
+   if(m.Msg==5){
+    FormWindowState next=m.WParam.ToInt32()==1?FormWindowState.Minimized:m.WParam.ToInt32()==2?FormWindowState.Maximized:FormWindowState.Normal;
+    scheduleRestore=!pendingRestore&&next==FormWindowState.Normal&&nativeState!=FormWindowState.Normal&&target.Width>0;
+    if(scheduleRestore)pendingRestore=true;
+    nativeState=next;
    }
    bool systemTransition=m.Msg==0x112&&((m.WParam.ToInt64()&0xfff0)==0xf030||(m.WParam.ToInt64()&0xfff0)==0xf020||(m.WParam.ToInt64()&0xfff0)==0xf120);
    if(systemTransition){RememberNormalBounds();suppressNormalCapture=true;}
    try{base.WndProc(ref m);}finally{if(systemTransition)suppressNormalCapture=false;}
+   if(m.Msg==5){
+    RefreshChromeLanguage(chromeLanguage);
+    if(scheduleRestore)BeginInvoke(new Action(()=>{try{if(!IsDisposed&&nativeState==FormWindowState.Normal){restoringBounds=true;Bounds=target;}}finally{restoringBounds=false;pendingRestore=false;RememberNormalBounds();}}));
+   }
    if(m.Msg==WM_GETMINMAXINFO){
     var screen=Screen.FromHandle(Handle);Rectangle area=screen.WorkingArea,bounds=screen.Bounds;
     var info=(MinMaxInfo)Marshal.PtrToStructure(m.LParam,typeof(MinMaxInfo));
