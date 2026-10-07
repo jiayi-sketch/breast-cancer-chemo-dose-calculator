@@ -132,6 +132,12 @@ npm run typecheck
 
 ## 作者与授权声明
 
+创作者与项目维护：**GitHub @jiayi-sketch**  
+AI 开发协作：**Codex**（代码实现、界面改进与测试协助）
+
+Creator and maintainer: **GitHub @jiayi-sketch**  
+AI development assistance: **Codex** (implementation, interface improvements and testing support)
+
 仅限于学术交流，严禁商业用途  
 版权所有 GitHub @jiayi-sketch
 
