@@ -90,7 +90,7 @@ namespace ChemoDose.Windowing {
    try{base.WndProc(ref m);}finally{if(systemTransition)suppressNormalCapture=false;}
    if(m.Msg==5){
     RefreshChromeLanguage(chromeLanguage);
-    if(scheduleRestore)BeginInvoke(new Action(()=>{try{if(!IsDisposed&&nativeState==FormWindowState.Normal){restoringBounds=true;Bounds=target;}}finally{restoringBounds=false;pendingRestore=false;RememberNormalBounds();}}));
+    if(scheduleRestore)BeginInvoke(new Action(()=>{try{if(!IsDisposed&&nativeState==FormWindowState.Normal){restoringBounds=true;Size=target.Size;}}finally{restoringBounds=false;pendingRestore=false;RememberNormalBounds();}}));
    }
    if(m.Msg==WM_GETMINMAXINFO){
     var screen=Screen.FromHandle(Handle);Rectangle area=screen.WorkingArea,bounds=screen.Bounds;
