@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
-// Shared by .NET 4 x86 and modern Windows. No DWM dependency (XP compatibility).
+// Shared by .NET 4 x86 and modern Windows. DWM is optional; XP uses user32 only.
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -13,6 +13,7 @@ namespace ChemoDose.Windowing {
   WindowButton minimize,maximize,close;
   string chromeLanguage="zh-Hans";
   Rectangle normalBounds;FormWindowState nativeState;bool restoringBounds,suppressNormalCapture,pendingRestore;
+  [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
   [DllImport("user32.dll")] static extern bool ReleaseCapture();
   [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd,int msg,IntPtr wParam,IntPtr lParam);
   [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr hwnd,int index);
@@ -22,6 +23,12 @@ namespace ChemoDose.Windowing {
    FormBorderStyle=FormBorderStyle.None;
    // This application-coloured grip replaces the native non-client border.
    Padding=new Padding(6);BackColor=Color.FromArgb(7,59,97);
+  }
+  protected override void OnHandleCreated(EventArgs e) {
+   base.OnHandleCreated(e);
+   // Vista+ may draw a DWM frame despite a zero-sized non-client area.
+   // Keep this optional so the CLR4 compatibility edition still opens on XP.
+   if(Environment.OSVersion.Version.Major>=6)try{int disabled=1;DwmSetWindowAttribute(Handle,2,ref disabled,4);}catch(DllNotFoundException){}catch(EntryPointNotFoundException){}
   }
   protected override void OnShown(EventArgs e) {
    Rectangle area=Screen.FromHandle(Handle).WorkingArea;
@@ -70,7 +77,8 @@ namespace ChemoDose.Windowing {
   protected override void WndProc(ref Message m) {
    // Keep Windows resize/snap/system-menu styles while allocating the entire
    // rectangle to the client area: no native caption or thick border is drawn.
-   if(m.Msg==WM_NCCALCSIZE){m.Result=IntPtr.Zero;return;}
+   if(m.Msg==WM_NCCALCSIZE||m.Msg==0x85){m.Result=IntPtr.Zero;return;}
+   if(m.Msg==0x86){m.Result=new IntPtr(1);return;}
    if(m.Msg==WM_NCHITTEST){
     long position=m.LParam.ToInt64();var p=PointToClient(new Point((short)(position&0xffff),(short)((position>>16)&0xffff)));
     int hit=ResizeHit(p,ClientSize,Padding.Left,nativeState==FormWindowState.Normal);
