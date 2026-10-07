@@ -7,9 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>ChemoDose</AssemblyName>
-    <Version>2.0.2</Version>
-    <AssemblyVersion>2.0.2.0</AssemblyVersion>
-    <FileVersion>2.0.2.0</FileVersion>
+    <Version>2.0.3</Version>
+    <AssemblyVersion>2.0.3.0</AssemblyVersion>
+    <FileVersion>2.0.3.0</FileVersion>
     <Product>乳腺癌剂量计算</Product>
     <Copyright>版权所有 GitHub @jiayi-sketch；仅限于学术交流，严禁商业用途。</Copyright>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -22,6 +22,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../windows-common/FramelessWindow.cs" Link="FramelessWindow.cs" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
     <EmbeddedResource Include="../shared-web/**/*" LogicalName="web/%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="web/**/*" LogicalName="web/windows-desktop/%(RecursiveDir)%(Filename)%(Extension)" />

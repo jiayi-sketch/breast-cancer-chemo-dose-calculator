@@ -60,5 +60,5 @@
   observer.observe(el('report-workspace'), {attributes:true,attributeFilter:['hidden']});
   document.addEventListener('chemo-language-change', synchronize);
   synchronize();
-  window.ChemoWindowsDesktop = {synchronize, version:'2.0.2'};
+  window.ChemoWindowsDesktop = {synchronize, version:'2.0.3'};
 }());
