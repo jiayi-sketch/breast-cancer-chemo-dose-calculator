@@ -22,6 +22,12 @@ namespace ChemoDose.Windowing {
    // This application-coloured grip replaces the native non-client border.
    Padding=new Padding(6);BackColor=Color.FromArgb(7,59,97);
   }
+  protected override void OnShown(EventArgs e) {
+   Rectangle area=Screen.FromHandle(Handle).WorkingArea;
+   Size=new Size(Math.Min(Width,area.Width),Math.Min(Height,area.Height));
+   Location=new Point(Math.Max(area.Left,Math.Min(Left,area.Right-Width)),Math.Max(area.Top,Math.Min(Top,area.Bottom-Height)));
+   base.OnShown(e);
+  }
   protected override CreateParams CreateParams {
    get {var cp=base.CreateParams;cp.Style=(cp.Style&~WS_CAPTION)|WS_THICKFRAME|0x80000|0x20000|0x10000;return cp;}
   }

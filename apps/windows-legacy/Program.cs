@@ -357,7 +357,7 @@ namespace ChemoDose.Legacy {
    Environment.ExitCode=passed?0:1;Close();
   }
   void SavePreview(string path) {
-   PerformLayout();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(path);}
+   PerformLayout();Activate();Application.DoEvents();using(var bitmap=new Bitmap(Width,Height)){using(var graphics=Graphics.FromImage(bitmap))graphics.CopyFromScreen(Location,Point.Empty,Size);bitmap.Save(path);}
   }
  }
 }
