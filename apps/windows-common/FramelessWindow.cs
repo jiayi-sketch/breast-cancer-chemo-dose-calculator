@@ -78,7 +78,7 @@ namespace ChemoDose.Windowing {
    // Keep Windows resize/snap/system-menu styles while allocating the entire
    // rectangle to the client area: no native caption or thick border is drawn.
    if(m.Msg==WM_NCCALCSIZE||m.Msg==0x85){m.Result=IntPtr.Zero;return;}
-   if(m.Msg==0x86){m.Result=new IntPtr(1);return;}
+   if(m.Msg==0x86){m.LParam=new IntPtr(-1);base.WndProc(ref m);return;}
    if(m.Msg==WM_NCHITTEST){
     long position=m.LParam.ToInt64();var p=PointToClient(new Point((short)(position&0xffff),(short)((position>>16)&0xffff)));
     int hit=ResizeHit(p,ClientSize,Padding.Left,nativeState==FormWindowState.Normal);
