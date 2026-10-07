@@ -1,7 +1,7 @@
 name: Windows original layout and installer verification
 on:
   push:
-    branches: [codex/windows-original-layout]
+    branches: [codex/windows-frameless]
   workflow_dispatch:
   workflow_call:
 permissions:
@@ -62,18 +62,18 @@ jobs:
         shell: pwsh
         run: |
           $dotnet = (Get-Command dotnet).Source
-          python scripts/build-windows-unified.py --dotnet $dotnet --references "$PWD/build/inputs/net40/build/.NETFramework/v4.0" --modern "$PWD/build/modern/ChemoDose.exe" --legacy "$PWD/build/legacy/ChemoDose-2.0.2-windows-x86-legacy.exe" --legacy-config "$PWD/build/legacy/ChemoDose-2.0.2-windows-x86-legacy.exe.config" --output "$PWD/build/release"
+          python scripts/build-windows-unified.py --dotnet $dotnet --references "$PWD/build/inputs/net40/build/.NETFramework/v4.0" --modern "$PWD/build/modern/ChemoDose.exe" --legacy "$PWD/build/legacy/ChemoDose-2.0.3-windows-x86-legacy.exe" --legacy-config "$PWD/build/legacy/ChemoDose-2.0.3-windows-x86-legacy.exe.config" --output "$PWD/build/release"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/test-windows-unified.py --dotnet $dotnet --output "$PWD/build/verification" --exe "$PWD/build/release/ChemoDose-2.0.2-windows-unified.exe" --manifest "$PWD/build/release/windows-unified-build.json"
+          python scripts/test-windows-unified.py --dotnet $dotnet --output "$PWD/build/verification" --exe "$PWD/build/release/ChemoDose-2.0.3-windows-unified.exe" --manifest "$PWD/build/release/windows-unified-build.json"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/build-windows-installer.py --makensis "$PWD/build/inputs/nsis/nsis-3.13/makensis.exe" --unified "$PWD/build/release/ChemoDose-2.0.2-windows-unified.exe" --output "$PWD/build/release"
+          python scripts/build-windows-installer.py --makensis "$PWD/build/inputs/nsis/nsis-3.13/makensis.exe" --unified "$PWD/build/release/ChemoDose-2.0.3-windows-unified.exe" --output "$PWD/build/release"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item build/inputs/nsis/nsis-3.13/COPYING build/release/NSIS-COPYING.txt
           Copy-Item build/legacy/windows-legacy-build.json build/release/
       - name: Verify native clipboard, OCR, three languages and original layouts
         shell: pwsh
         run: |
-          $exe = "$PWD/build/release/ChemoDose-2.0.2-windows-unified.exe"
+          $exe = "$PWD/build/release/ChemoDose-2.0.3-windows-unified.exe"
           foreach ($mode in @('modern','compat')) {
             $report = "$PWD/build/verification/windows-$mode-self-test.json"
             $arguments = "--self-test --test-report `"$report`""
@@ -92,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-2.0.2-tested
+          name: windows-2.0.3-tested
           path: |
             build/release/*.exe
             build/release/*.json

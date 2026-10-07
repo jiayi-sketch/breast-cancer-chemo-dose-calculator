@@ -9,9 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-[assembly: AssemblyVersion("2.0.2.0")]
-[assembly: AssemblyFileVersion("2.0.2.0")]
-[assembly: AssemblyInformationalVersion("2.0.2")]
+[assembly: AssemblyVersion("2.0.3.0")]
+[assembly: AssemblyFileVersion("2.0.3.0")]
+[assembly: AssemblyInformationalVersion("2.0.3")]
 [assembly: AssemblyCopyright("版权所有 GitHub @jiayi-sketch；仅限于学术交流，严禁商业用途。")]
 namespace ChemoDose.Legacy {
  static class Program {
@@ -41,8 +41,8 @@ namespace ChemoDose.Legacy {
   public int SelectedIndex {get{return selected;}set{selected=value;for(int i=0;i<pages.Count;i++)pages[i].Visible=i==selected;if(selected>=0&&selected<pages.Count)pages[selected].BringToFront();if(SelectedIndexChanged!=null)SelectedIndexChanged(this,EventArgs.Empty);}}
   public void AddPage(Control page){page.Dock=DockStyle.Fill;pages.Add(page);Controls.Add(page);page.Visible=pages.Count-1==selected;if(page.Visible)page.BringToFront();}
  }
- sealed class LegacyWindow : Form {
-  const string Version="2.0.2";
+ sealed class LegacyWindow : ChemoDose.Windowing.FramelessWindow {
+  const string Version="2.0.3";
   readonly JavaScriptSerializer json=new JavaScriptSerializer {MaxJsonLength=2000000};
   readonly EngineBridge bridge=new EngineBridge(EngineBridge.Resource("engine.js"));
   readonly Dictionary<Control,string> labels=new Dictionary<Control,string>();
@@ -132,7 +132,7 @@ namespace ChemoDose.Legacy {
    var tools=Flow();tools.FlowDirection=FlowDirection.LeftToRight;tools.WrapContents=false;tools.BackColor=top.BackColor;
    language.DropDownStyle=ComboBoxStyle.DropDownList;language.Items.AddRange(new object[]{new Choice("zh-Hans","简体中文"),new Choice("zh-Hant","繁體中文"),new Choice("en","English")});language.Width=112;language.Margin=new Padding(3,7,3,3);language.SelectedIndex=0;tools.Controls.Add(language);
    var clear=Button("新患者 / 清空本次",ClearCase);clear.BackColor=Color.FromArgb(13,100,156);clear.ForeColor=Color.White;tools.Controls.Add(clear);
-   help.DropDownStyle=ComboBoxStyle.DropDownList;help.Width=115;help.Margin=new Padding(3,7,3,3);tools.Controls.Add(help);top.Controls.Add(tools,1,0);
+   help.DropDownStyle=ComboBoxStyle.DropDownList;help.Width=115;help.Margin=new Padding(3,7,3,3);top.Controls.Add(tools,1,0);InitializeChrome(help);
    help.SelectedIndexChanged+=(sender,e)=>{if(help.SelectedIndex<=0)return;string key=Key(help);help.SelectedIndex=0;Guard(()=>{if(key=="licence")MessageBox.Show(this,EngineBridge.Resource("LICENSE.txt"),T("非商业学术授权"));else ShowText(T("第三方许可"),EngineBridge.Resource("Jint-LICENSE.txt"));});};
    Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");help.Width=115;
    var body=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,Margin=Padding.Empty};body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,165));body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
@@ -230,7 +230,7 @@ namespace ChemoDose.Legacy {
    matches.Dock=DockStyle.Fill;Row(table,matches,true);Row(table,Button("打开所选目录条目",()=>{if(lastMatch==null||!(matches.SelectedItem is Choice))throw new Exception(T("请选择"));OpenCatalogueEntry(((Choice)matches.SelectedItem).Key);tabs.SelectedIndex=0;}),false);
   }
   void ChangeLanguage() {
-   updating=true;currentLanguage=Key(language);foreach(var pair in labels)pair.Key.Text=T(pair.Value);
+   updating=true;currentLanguage=Key(language);RefreshChromeLanguage(currentLanguage);foreach(var pair in labels)pair.Key.Text=T(pair.Value);
    Options(help,new[]{"","licence","thirdparty"},new[]{"帮助","查看授权","第三方许可"},"");help.Width=115;
    Text=T("乳腺癌剂量计算")+" · "+Version;foreach(DataGridViewColumn column in drugGrid.Columns)column.HeaderText=T((string)column.Tag);
    var sections=allEntries.Select(o=>S(D(o),"section")).Distinct().ToArray();
@@ -330,7 +330,7 @@ namespace ChemoDose.Legacy {
   void SelfTest() {
    bool passed=false;string error="";try {
     for(int l=0;l<3;l++) {
-     language.SelectedIndex=l;OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();if(!output.Text.Contains("600.00"))throw new Exception("TCbHP calculation");
+     language.SelectedIndex=l;VerifyChrome();OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();if(!output.Text.Contains("600.00"))throw new Exception("TCbHP calculation");
      Clipboard.SetText(summary);if(Clipboard.GetText()!=summary)throw new Exception("Clipboard");weight.Text="61";if(copy.Enabled||output.Text.Length!=0||confirmed.Checked)throw new Exception("Stale calculation");
      reports["biopsy"].Text="ER 80%; PR 20%; HER2 3+; Ki-67 30%";Parse();phase.SelectedIndex=1;menopause.SelectedIndex=1;surgery.SelectedIndex=1;nodes.SelectedIndex=1;reportReviewed.Checked=true;Match();if(matches.Items.Count==0)throw new Exception("Report match");
      reports["biopsy"].AppendText("; HER2 1+");if(parsed!=null||lastMatch!=null||matches.Items.Count!=0)throw new Exception("Stale report");ClearCase();
@@ -341,7 +341,7 @@ namespace ChemoDose.Legacy {
     OpenCatalogueEntry("r001");
     int reportIndex=Array.IndexOf(args,"--test-report");
     for(int l=0;l<3;l++) {
-     language.SelectedIndex=l;OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();
+     language.SelectedIndex=l;VerifyChrome();OpenCatalogueEntry("r001");height.Text="170";weight.Text="60";renal.Text="75";reviewer.Text="Synthetic QA";renalConfirmed.Checked=true;confirmed.Checked=true;Calculate();
      if(drugGrid.Rows.Count!=4||!Convert.ToString(drugGrid.Rows[1].Cells[3].Value).Contains("600.00"))throw new Exception("Classic grid calculated amount");
      if(!(entries.SelectedItem is Choice)||((Choice)entries.SelectedItem).Key!="r001"||schemeButtons["r001"].BackColor!=Color.FromArgb(13,100,156))throw new Exception("Classic visible list selection");
      if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+"."+Key(language)+".png");
@@ -353,7 +353,7 @@ namespace ChemoDose.Legacy {
     if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+".small.png");
     passed=true;
    }catch(Exception e){error=e.ToString();}
-   int i=Array.IndexOf(args,"--test-report");if(i>=0&&i+1<args.Length){string path=Path.GetFullPath(args[i+1]);File.WriteAllText(path,json.Serialize(new {passed=passed,error=error,version=Version,os=Environment.OSVersion.ToString(),bits=IntPtr.Size*8}),Encoding.UTF8);if(passed){using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(path+".png");}}}
+   int i=Array.IndexOf(args,"--test-report");if(i>=0&&i+1<args.Length){string path=Path.GetFullPath(args[i+1]);File.WriteAllText(path,json.Serialize(new {passed=passed,error=error,version=Version,os=Environment.OSVersion.ToString(),bits=IntPtr.Size*8,framelessControlsPassed=passed}),Encoding.UTF8);if(passed){using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(path+".png");}}}
    Environment.ExitCode=passed?0:1;Close();
   }
   void SavePreview(string path) {

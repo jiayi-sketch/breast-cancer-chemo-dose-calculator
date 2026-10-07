@@ -17,7 +17,7 @@ internal static class Program
     }
 }
 
-internal sealed class DoseWindow : Form
+internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
 {
     private const string Origin = "https://chemodose.invalid";
     private const string Notice = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch";
@@ -48,6 +48,7 @@ internal sealed class DoseWindow : Form
     }
     private void RefreshLanguage() {
         Text = $"{Localized("乳腺癌剂量计算")} · {Localized("内置方案版")} {Version}";
+        RefreshChromeLanguage(language);
         if (MainMenuStrip?.Items[0] is ToolStripMenuItem help) {
             help.Text = Localized("帮助");
             foreach (ToolStripItem item in help.DropDownItems) item.Text = Localized((string)item.Tag!);
@@ -79,7 +80,7 @@ internal sealed class DoseWindow : Form
         MinimumSize = new Size(820, 650);
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Dpi;
-        var menu = new MenuStrip();
+        var menu = new MenuStrip { AutoSize=false, Width=92, Height=30, BackColor=Color.FromArgb(7,59,97), ForeColor=Color.White };
         var help = new ToolStripMenuItem("帮助");
         help.DropDownItems.Add("关于乳腺癌剂量计算", null, (_, _) => ShowAbout());
         help.DropDownItems.Add("查看授权", null, (_, _) =>
@@ -91,7 +92,7 @@ internal sealed class DoseWindow : Form
         MainMenuStrip = menu;
         RefreshLanguage();
         Controls.Add(web);
-        Controls.Add(menu);
+        InitializeChrome(menu);
         foreach (string name in AppAssembly.GetManifestResourceNames().Where(n => n.StartsWith("web/", StringComparison.Ordinal)))
         {
             using Stream stream = AppAssembly.GetManifestResourceStream(name)!;
@@ -365,6 +366,8 @@ internal sealed class DoseWindow : Form
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
         bool desktopPreviewsPassed = await CaptureDesktopPreviews();
+        VerifyChrome();
+        bool framelessControlsPassed = true;
         bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
         // Real renderer + bundled OCR + native clipboard, starting from an empty fictional case.
         await web.CoreWebView2.ExecuteScriptAsync("document.getElementById('reports-clear').click();document.getElementById('reports-open').click()");
@@ -384,7 +387,7 @@ internal sealed class DoseWindow : Form
             using var screenshot = File.Create(Path.ChangeExtension(testReport,".ocr.png"));
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,screenshot);
         }
-        FinishTest(passed && desktopPreviewsPassed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, desktopPreviewsPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
+        FinishTest(passed && desktopPreviewsPassed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, desktopPreviewsPassed, framelessControlsPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
     }
 
     private async Task<bool> CaptureDesktopPreviews()
@@ -410,6 +413,7 @@ internal sealed class DoseWindow : Form
             if (testReport is not null) {
                 using var preview = File.Create(Path.ChangeExtension(testReport, "." + code + ".png"));
                 await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,preview);
+                SaveWindowPreview(Path.ChangeExtension(testReport,"." + code + ".window.png"));
             }
         }
         ClientSize = new Size(1024,700);
@@ -421,6 +425,16 @@ internal sealed class DoseWindow : Form
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,preview);
         }
         return passed;
+    }
+
+    private void SaveWindowPreview(string path)
+    {
+        // Include the native chrome, which is absent from WebView CapturePreview.
+        Activate();
+        using var bitmap = new Bitmap(Width,Height);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.CopyFromScreen(Location,Point.Empty,Size);
+        bitmap.Save(path,System.Drawing.Imaging.ImageFormat.Png);
     }
 
     private void FinishTest(bool passed, string detail)
