@@ -27,8 +27,8 @@ namespace ChemoDose.Windowing {
   }
   protected void InitializeChrome(Control help) {
    chrome=new Panel {Dock=DockStyle.Top,Height=30,BackColor=Color.FromArgb(7,59,97),AccessibleName="Window controls"};
-   chrome.MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero);}};
-   chrome.DoubleClick+=(s,e)=>ToggleMaximize();
+   chrome.MouseDown+=(s,e)=>{if(e.Button!=MouseButtons.Left)return;if(e.Clicks==2){ToggleMaximize();return;}
+    Point point=chrome.PointToScreen(e.Location);ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),new IntPtr(unchecked((int)(((point.Y&0xffff)<<16)|(point.X&0xffff)))));};
    close=new WindowButton(2);maximize=new WindowButton(1);minimize=new WindowButton(0);
    close.Click+=(s,e)=>Close();maximize.Click+=(s,e)=>ToggleMaximize();minimize.Click+=(s,e)=>WindowState=FormWindowState.Minimized;
    // Dock right in reverse visual order: minimize, maximize, close.
