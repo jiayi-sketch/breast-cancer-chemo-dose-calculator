@@ -416,7 +416,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
                 SaveWindowPreview(Path.ChangeExtension(testReport,"." + code + ".window.png"));
             }
         }
-        ClientSize = new Size(1024,700);
+        Size = new Size(1024,700);
         await Task.Delay(200);
         string small = await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-entry-id=\"r018\"]').click();window.ChemoWindowsDesktop.synchronize();document.documentElement.scrollWidth<=innerWidth && document.querySelectorAll('.drug-row').length===6 && document.getElementById('entry-list').getBoundingClientRect().width>=180 && document.querySelector('.patient-panel').getBoundingClientRect().top<document.querySelector('.catalogue-layout').getBoundingClientRect().top");
         passed &= small == "true";

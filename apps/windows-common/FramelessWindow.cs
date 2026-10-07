@@ -12,6 +12,7 @@ namespace ChemoDose.Windowing {
   Panel chrome;
   WindowButton minimize,maximize,close;
   string chromeLanguage="zh-Hans";
+  Rectangle normalBounds;FormWindowState previousState;bool restoringBounds,suppressNormalCapture;
   [DllImport("user32.dll")] static extern bool ReleaseCapture();
   [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd,int msg,IntPtr wParam,IntPtr lParam);
   [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr hwnd,int index);
@@ -52,7 +53,17 @@ namespace ChemoDose.Windowing {
    maximize.Restore=WindowState==FormWindowState.Maximized;maximize.Invalidate();
   }
   void ToggleMaximize(){WindowState=WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized;}
-  protected override void OnResize(EventArgs e){base.OnResize(e);RefreshChromeLanguage(chromeLanguage);}
+  protected override void OnLocationChanged(EventArgs e){base.OnLocationChanged(e);RememberNormalBounds();}
+  void RememberNormalBounds(){if(!restoringBounds&&!suppressNormalCapture&&WindowState==FormWindowState.Normal&&previousState==FormWindowState.Normal)normalBounds=Bounds;}
+  protected override void OnResize(EventArgs e){
+   base.OnResize(e);
+   // .NET 4 otherwise adds its old non-client metrics back when restoring a
+   // captionless window. Preserve the actual rectangle instead of that cache.
+   if(!restoringBounds&&WindowState==FormWindowState.Normal&&previousState!=FormWindowState.Normal&&normalBounds.Width>0){
+    restoringBounds=true;Bounds=normalBounds;restoringBounds=false;
+   }
+   previousState=WindowState;RememberNormalBounds();RefreshChromeLanguage(chromeLanguage);
+  }
   protected override bool ProcessCmdKey(ref Message msg,Keys keyData) {
    if(keyData==(Keys.Alt|Keys.Space)){ReleaseCapture();SendMessage(Handle,0x112,new IntPtr(0xF100),new IntPtr(0x20));return true;}
    return base.ProcessCmdKey(ref msg,keyData);
@@ -72,7 +83,9 @@ namespace ChemoDose.Windowing {
     int hit=ResizeHit(p,ClientSize,Padding.Left,WindowState==FormWindowState.Normal);
     if(hit!=1){m.Result=new IntPtr(hit);return;}
    }
-   base.WndProc(ref m);
+   bool systemTransition=m.Msg==0x112&&((m.WParam.ToInt64()&0xfff0)==0xf030||(m.WParam.ToInt64()&0xfff0)==0xf020||(m.WParam.ToInt64()&0xfff0)==0xf120);
+   if(systemTransition){RememberNormalBounds();suppressNormalCapture=true;}
+   try{base.WndProc(ref m);}finally{if(systemTransition)suppressNormalCapture=false;}
    if(m.Msg==WM_GETMINMAXINFO){
     var screen=Screen.FromHandle(Handle);Rectangle area=screen.WorkingArea,bounds=screen.Bounds;
     var info=(MinMaxInfo)Marshal.PtrToStructure(m.LParam,typeof(MinMaxInfo));
@@ -92,7 +105,7 @@ namespace ChemoDose.Windowing {
    WindowState=FormWindowState.Normal;maximize.PerformClick();
    if(WindowState!=FormWindowState.Maximized||Bounds!=Screen.FromHandle(Handle).WorkingArea)throw new Exception("Maximize overlaps the taskbar");
    if(maximize.AccessibleName!=(chromeLanguage=="en"?"Restore":chromeLanguage=="zh-Hant"?"還原":"还原"))throw new Exception("Restore accessibility name");
-   maximize.PerformClick();if(WindowState!=FormWindowState.Normal||Bounds!=saved)throw new Exception("Restore bounds");
+   maximize.PerformClick();if(WindowState!=FormWindowState.Normal||Bounds!=saved)throw new Exception("Restore bounds: expected "+saved+", actual "+Bounds);
    foreach(var b in new[]{minimize,maximize,close})if(b.Parent!=chrome||!b.Visible||b.Left<0||b.Right>chrome.ClientSize.Width||String.IsNullOrEmpty(b.AccessibleName))throw new Exception("Window control layout");
    // Exercise the real Close button on a separate empty window.
    using(var probe=new FramelessWindow()){probe.InitializeChrome(null);probe.ShowInTaskbar=false;probe.Show();bool closed=false;probe.FormClosed+=(s,e)=>closed=true;probe.close.PerformClick();if(!closed)throw new Exception("Close control");}

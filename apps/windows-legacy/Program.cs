@@ -347,7 +347,7 @@ namespace ChemoDose.Legacy {
      if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+"."+Key(language)+".png");
      weight.Text="61";if(drugGrid.Rows.Cast<DataGridViewRow>().Any(r=>Convert.ToString(r.Cells[3].Value).Contains("600.00")))throw new Exception("Stale grid amount");
     }
-    ClientSize=new Size(1024,700);OpenCatalogueEntry("r018");PerformLayout();
+    Size=new Size(1024,700);OpenCatalogueEntry("r018");PerformLayout();
     if(drugGrid.Rows.Count!=6||drugGrid.Width<500||drugGrid.Height<180||schemeList.Width<180||patientInputs.PointToScreen(Point.Empty).Y>=schemeList.PointToScreen(Point.Empty).Y)throw new Exception("Classic layout on small display");
     if(drugGrid.PointToScreen(new Point(drugGrid.Width,0)).X>tabs.PointToScreen(new Point(tabs.ClientSize.Width,0)).X||((TableLayoutPanel)Controls[0]).GetControlFromPosition(0,0).Height>90||drugGrid.Columns.Cast<DataGridViewColumn>().Sum(c=>c.Width)>drugGrid.ClientSize.Width||patientInputs.Parent.Height>205)throw new Exception("Classic header or result columns clipped");
     if(reportIndex>=0&&reportIndex+1<args.Length)SavePreview(args[reportIndex+1]+".small.png");
