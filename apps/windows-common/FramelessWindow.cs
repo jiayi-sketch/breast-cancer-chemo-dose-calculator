@@ -37,7 +37,7 @@ namespace ChemoDose.Windowing {
    chrome.MouseDown+=(s,e)=>{if(e.Button!=MouseButtons.Left)return;if(e.Clicks==2){ToggleMaximize();return;}
     Point point=chrome.PointToScreen(e.Location);ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),new IntPtr(unchecked((int)(((point.Y&0xffff)<<16)|(point.X&0xffff)))));};
    close=new WindowButton(2);maximize=new WindowButton(1);minimize=new WindowButton(0);
-   close.Click+=(s,e)=>Close();maximize.Click+=(s,e)=>ToggleMaximize();minimize.Click+=(s,e)=>WindowState=FormWindowState.Minimized;
+   close.Click+=(s,e)=>Close();maximize.Click+=(s,e)=>ToggleMaximize();minimize.Click+=(s,e)=>SetWindowState(FormWindowState.Minimized);
    // Dock right in reverse visual order: minimize, maximize, close.
    chrome.Controls.Add(minimize);chrome.Controls.Add(maximize);chrome.Controls.Add(close);
    if(help!=null){help.Dock=DockStyle.Left;chrome.Controls.Add(help);}
@@ -52,7 +52,8 @@ namespace ChemoDose.Windowing {
    foreach(var b in new[]{minimize,maximize,close})b.AccessibleDescription=b.AccessibleName;
    maximize.Restore=WindowState==FormWindowState.Maximized;maximize.Invalidate();
   }
-  void ToggleMaximize(){WindowState=WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized;}
+  void SetWindowState(FormWindowState state){RememberNormalBounds();suppressNormalCapture=true;try{WindowState=state;}finally{suppressNormalCapture=false;}}
+  void ToggleMaximize(){SetWindowState(WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized);}
   protected override void OnLocationChanged(EventArgs e){base.OnLocationChanged(e);RememberNormalBounds();}
   void RememberNormalBounds(){if(!restoringBounds&&!suppressNormalCapture&&WindowState==FormWindowState.Normal&&previousState==FormWindowState.Normal)normalBounds=Bounds;}
   protected override void OnResize(EventArgs e){
