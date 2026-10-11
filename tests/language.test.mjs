@@ -7,7 +7,7 @@ const root=new URL('../apps/shared-web/',import.meta.url);
 function setup(t,page='index',lang='zh-Hans') {
   const w=new Window({url:'https://chemodose.invalid/'+page+'.html?lang='+lang,settings:{enableJavaScriptEvaluation:true,disableJavaScriptFileLoading:true,disableCSSFileLoading:true,suppressInsecureJavaScriptEnvironmentWarning:true,navigation:{disableMainFrameNavigation:true,disableChildFrameNavigation:true,disableChildPageNavigation:true}}});
   w.document.write(readFileSync(new URL(page+'.html',root),'utf8'));
-  const files=['core.browser.js',...(page==='index'?['catalogue.browser.js','catalogue-engine.browser.js']:[]),'translations.browser.js','i18n.js',page==='index'?'catalogue-ui.js':'app.js'];
+  const files=['core.browser.js','history-engine.browser.js',...(page==='index'?['catalogue.browser.js','catalogue-engine.browser.js']:[]),'translations.browser.js','i18n.js',page==='index'?'catalogue-ui.js':'app.js'];
   for(const f of files)w.eval(readFileSync(new URL(f,root),'utf8'));
   const el=id=>w.document.getElementById(id);
   const input=(id,value,event='input')=>{el(id).value=value;el(id).dispatchEvent(new w.Event(event,{bubbles:true}));};
@@ -18,7 +18,7 @@ function setup(t,page='index',lang='zh-Hans') {
 for(const lang of ['zh-Hans','zh-Hant','en']) {
  test(lang+': complete regimen arithmetic, copy and source numbers remain consistent',t=>{
   const {w,el,input,calculate}=setup(t,'index',lang);let copied;w.AndroidBridge={copySummary:v=>copied=v};
-  for(const [id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','核对人：医师']])input(id,v);
+  for(const [id,v]of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','核对人：医师']])input(id,v);
   el('renal-confirmed').checked=true;calculate();el('copy').click();
   assert.equal(el('renal-method'),null);
   const r=JSON.parse(el('raw-result').textContent);
@@ -35,7 +35,7 @@ for(const lang of ['zh-Hans','zh-Hant','en']) {
   const {w,el,input,calculate}=setup(t,'manual',lang);let copied;w.AndroidBridge={copySummary:v=>copied=v};
   for(const [kind,a,b,expected]of [['bsa',7.5,null,[15]],['bsa_range',7.5,10,[15,20]],['weight',2,null,[160]],['weight_seq',2,1,[160,80]],['fixed',15,null,[15]],['fixed_seq',15,10,[15,10]],['fixed_alt',15,10,[10]],['auc',2,null,[150]]]) {
    input('kind',kind,'change');
-   for(const[id,v]of [['item-name','自填首剂'],['reference','自填来源：目录'],['reviewer','自填核对人'],['dose1',String(a)],['dose2',b===null?'':String(b)],['height','180'],['weight','80'],['renal-value','50']])input(id,v);
+   for(const[id,v]of [['item-name','自填首剂'],['reference','自填来源：目录'],['hospital-number','自填核对人'],['dose1',String(a)],['dose2',b===null?'':String(b)],['height','180'],['weight','80'],['renal-value','50']])input(id,v);
    if(kind==='fixed_alt'){input('schedule1','原文频次一');input('schedule2','原文频次二');input('alternative','1');}
    el('renal-confirmed').checked=true;calculate();assert.equal(el('form-error').hidden,true,el('form-error').textContent);
    assert.deepEqual(JSON.parse(el('raw-result').textContent).quantities.map(q=>q.valueMg),expected);el('copy').click();
@@ -64,16 +64,16 @@ test('English / Traditional search works across languages and invalidates prior 
  language('zh-Hant');input('search','卡鉑');assert.ok(el('entry-list').querySelectorAll('button').length>0);
 });
 test('changing language preserves inputs and selected alternative but clears results and confirmations',t=>{
- const{w,el,input,calculate,language}=setup(t);el('section-2').click();w.document.querySelector('[data-entry-id="r056"]').click();input('reviewer','原文');input('alt-r056-d01','1','change');calculate();
+ const{w,el,input,calculate,language}=setup(t);el('section-2').click();w.document.querySelector('[data-entry-id="r056"]').click();input('hospital-number','原文');input('alt-r056-d01','1','change');calculate();
  assert.notEqual(el('raw-result').textContent,'');language('en');
- assert.equal(el('alt-r056-d01').value,'1');assert.equal(el('reviewer').value,'原文');assert.equal(el('confirmed').checked,false);assert.equal(el('renal-confirmed').checked,false);
+ assert.equal(el('alt-r056-d01').value,'1');assert.equal(el('hospital-number').value,'原文');assert.equal(el('confirmed').checked,false);assert.equal(el('renal-confirmed').checked,false);
  assert.equal(el('raw-result').textContent,'');assert.equal(el('summary-text').textContent,'');assert.equal(el('copy').disabled,true);assert.match(el('message').textContent,/Language changed/);
  assert.match(w.document.querySelector('a').getAttribute('href'),/lang=en/);
  calculate();assert.equal(JSON.parse(el('raw-result').textContent).rows[0].result.quantities[0].valueMg,20);
 });
 test('language switch preserves the live BSA preview while invalidating dose results',t=>{
  const{el,input,language,calculate}=setup(t);
- for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成']])input(id,v);
+ for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成']])input(id,v);
  el('renal-confirmed').checked=true;calculate();assert.equal(el('bsa-value').textContent,'2.000');
  language('en');assert.equal(el('bsa-value').textContent,'2.000');assert.equal(el('raw-result').textContent,'');
  language('zh-Hant');assert.equal(el('bsa-value').textContent,'2.000');assert.equal(el('height').value,'180');
@@ -94,7 +94,7 @@ test('unsupported language is ignored and only allowed language preference is se
 });
 test('late native clipboard acknowledgement cannot overwrite the language-change status',t=>{
  const{w,el,input,language,calculate}=setup(t);const sent=[],listeners=new Set();w.chrome={webview:{postMessage:v=>sent.push(v),addEventListener:(_,f)=>listeners.add(f),removeEventListener:(_,f)=>listeners.delete(f)}};
- for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成']])input(id,v);el('renal-confirmed').checked=true;calculate();el('copy').click();language('en');
+ for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成']])input(id,v);el('renal-confirmed').checked=true;calculate();el('copy').click();language('en');
  for(const fn of [...listeners])fn({data:{type:'copySummaryResult',requestId:sent[0].requestId,ok:true}});
  assert.match(el('message').textContent,/Language changed/);assert.equal(listeners.size,0);assert.equal(el('copy').disabled,true);
 });

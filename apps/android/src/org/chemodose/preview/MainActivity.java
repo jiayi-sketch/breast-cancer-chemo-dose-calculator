@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
     private WebView web;
+    private HistoryStore historyStore;
     private static final String ROOT = "https://chemodose.invalid/";
     private String imageRequestId;
     private String lastClipboard = "";
@@ -74,7 +75,37 @@ public final class MainActivity extends Activity {
         web.loadUrl(ROOT + "index.html?lang=" + language);
     }
 
+    private synchronized HistoryStore historyStore() {
+        if (historyStore == null) historyStore = new HistoryStore(this);
+        return historyStore;
+    }
     private final class ClipboardBridge {
+        @JavascriptInterface public void history(final String json) {
+            if (json == null || json.length() > 12 * 1024 * 1024) return;
+            new Thread(new Runnable() { @Override public void run() {
+                final JSONObject response = new JSONObject();
+                try {
+                    JSONObject request = new JSONObject(json);
+                    String id = request.getString("requestId");
+                    if (id.length() > 100) return;
+                    response.put("requestId", id);
+                    String op = request.getString("op");
+                    if ("read".equals(op)) {
+                        HistoryStore.Snapshot snapshot = historyStore().read();
+                        response.put("content", snapshot.content); response.put("revision", snapshot.revision); response.put("ok", true);
+                    } else if ("write".equals(op)) {
+                        String content = request.getString("content");
+                        JSONObject document = new JSONObject(content);
+                        if (document.getInt("schemaVersion") != 1 || document.getJSONArray("records").length() > 500) throw new IllegalArgumentException();
+                        boolean written = historyStore().write(content, request.getString("revision"));
+                        response.put("ok", written); if (!written) response.put("error", "conflict");
+                    } else throw new IllegalArgumentException();
+                } catch (Exception error) { try { response.put("ok", false); response.put("error", "storage"); } catch (Exception ignored) { } }
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    if (web != null) web.evaluateJavascript("window.ChemoHistory?.receive(" + response.toString() + ")", null);
+                }});
+            }}).start();
+        }
         @JavascriptInterface public void saveLanguage(final String value) {
             if (!supportedLanguage(value)) return;
             runOnUiThread(new Runnable() { @Override public void run() {

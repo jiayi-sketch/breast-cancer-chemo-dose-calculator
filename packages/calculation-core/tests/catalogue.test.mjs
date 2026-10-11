@@ -90,7 +90,7 @@ test('tamoxifen requires an explicit alternative and preserves per-administratio
   }
 });
 test('explicit acknowledgement is required; shipped clinical review remains pending', () => {
-  for (const a of [null,{}, {confirmed:true,reviewer:''}, {confirmed:false,reviewer:'x'}])
+  for (const a of [null,{}, {confirmed:false,reviewer:'x'}])
     assert.equal(calculateRegimen(cat,'r001',inputs,a).status,'blocked');
   assert.equal(calculateRegimen(cat,'c001',inputs,ack).status,'blocked');
   assert.equal(cat.regimens[0].clinicalReview,'pending');
@@ -99,6 +99,6 @@ test('search respects section/subtype and copied sheet retains stages and full p
   assert.ok(filterEntries(cat,{section:'术前新辅助治疗',subtype:'HER2阳性',query:'TCbHP'}).every(r=>r.section==='术前新辅助治疗'&&r.subtype==='HER2阳性'));
   assert.equal(filterEntries(cat,{section:'保乳术后治疗',query:'卡铂'}).length,0);
   const text = summaryText(cat,calculateRegimen(cat,'r018',inputs,ack));
-  for (const phrase of ['第一阶段','第二阶段','PDF 56、59、60','PDF 60 页','112.50 mg','核对人','非处方','不相加']) assert.ok(text.includes(phrase),phrase);
+  for (const phrase of ['第一阶段','第二阶段','PDF 56、59、60','PDF 60 页','112.50 mg','住院号','非处方','不相加']) assert.ok(text.includes(phrase),phrase);
   assert.equal(summaryText(cat,{status:'blocked'}),'');
 });

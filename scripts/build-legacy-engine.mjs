@@ -4,7 +4,7 @@ import {pathToFileURL} from 'node:url';
 const ts=await import(pathToFileURL(process.env.TYPESCRIPT_MODULE || 'node_modules/typescript/lib/typescript.js'));
 const root=new URL('../',import.meta.url);
 let source=readFileSync(new URL('apps/windows-legacy/polyfills.js',root),'utf8');
-for(const name of ['core.browser.js','catalogue.browser.js','catalogue-engine.browser.js','reports-engine.browser.js','translations.browser.js']) {
+for(const name of ['core.browser.js','history-engine.browser.js','catalogue.browser.js','catalogue-engine.browser.js','reports-engine.browser.js','translations.browser.js']) {
   // ES5 interpreter uses ordinary capture groups; matchAll supplies their names.
   source+='\n'+readFileSync(new URL('apps/shared-web/'+name,root),'utf8').replace(/\(\?<\w+>/g,'(');
 }

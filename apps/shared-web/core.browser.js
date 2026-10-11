@@ -4,7 +4,7 @@ window.DoseCore = (function(){
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Arithmetic migration prototype. No network, storage, UI or treatment selection.
 
-const ENGINE_VERSION = '2.0.0';
+const ENGINE_VERSION = '2.1.0';
 
 const LEGACY_INPUT_LIMITS = Object.freeze({
   heightCm: Object.freeze([80, 250]         ),
@@ -22,7 +22,7 @@ const LEGACY_INPUT_LIMITS = Object.freeze({
  
 
                                           
-                                                                 
+                                                                                                              
 
                         
              
@@ -145,7 +145,7 @@ function calculateDose(request         )                    {
     return fail('invalid', 'rule.source', 'MISSING_PROVENANCE', '规则缺少版本或依据。');
   }
   if (!record(rule.review) || rule.review.status !== 'approved'
-    || !text(rule.review.reviewer) || !text(rule.review.reviewedOn)) {
+    || (!text(rule.review.reviewer) && rule.review.basis !== 'current-calculation-confirmation') || !text(rule.review.reviewedOn)) {
     return fail('blocked', 'rule.review', 'RULE_NOT_REVIEWED', '此规则尚未完成专业核对。');
   }
   if (request.clinicianConfirmed !== true) {
@@ -242,7 +242,8 @@ function calculateDose(request         )                    {
     ruleVersion: rule.version, source: {
       title: rule.source.title, version: rule.source.version, locator: rule.source.locator,
     },
-    review: { status: 'approved', reviewer: rule.review.reviewer, reviewedOn: rule.review.reviewedOn },
+    review: { status: 'approved', ...(text(rule.review.reviewer) ? {reviewer: rule.review.reviewer} : {}),
+      ...(rule.review.basis === 'current-calculation-confirmation' ? {basis: 'current-calculation-confirmation'         } : {}), reviewedOn: rule.review.reviewedOn },
     quantities, basis,
   };
 }

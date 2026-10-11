@@ -41,6 +41,10 @@ function translateText(text,lang) {
 }
 function legacyCall(request) {
   switch(request.op) {
+    case 'history-read': return window.HistoryEngine.readHistory(request.content);
+    case 'history-change': return window.HistoryEngine.changeHistory(request.state,request.operation);
+    case 'history-record': return window.HistoryEngine.normalizeRecord(request.record);
+    case 'history-search': return window.HistoryEngine.searchHistory(request.records,request.query);
     case 'catalogue': return window.ChemoCatalogue;
     case 'translate': return translateText(request.text,request.language);
     case 'parse': return window.ReportEngine.parseReports(request.sources);

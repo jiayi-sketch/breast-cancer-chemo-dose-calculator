@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 import { calculateDose } from './index.ts';
+import { patientInfo } from './history.mjs';
 
 export function filterEntries(catalogue, {section, subtype = '', query = ''}) {
   const needle = query.trim().toLocaleLowerCase();
@@ -36,7 +37,8 @@ export function calculateRegimen(catalogue, regimenId, inputs, acknowledgement) 
   const fail = message => ({status: 'blocked', issues: [{message}]});
   if (!r) return fail('请选择一个内置剂量方案。指南摘要不生成剂量。');
   if (acknowledgement?.confirmed !== true) return fail('请先核对所选方案、分阶段用药及本次参数，然后勾选确认。');
-  if (!acknowledgement?.reviewer?.trim()) return fail('请填写本次核对人。');
+  const patient = patientInfo(inputs?.patient?.ageYears, inputs?.patient?.hospitalNumber);
+  if (patient.issues.length) return fail(patient.issues.join(' '));
   const rows = [], issues = [];
   for (const d of r.drugs) {
     const rule = {id: d.id, version: catalogue.version, kind: d.kind, dose: d.dose,
@@ -44,7 +46,7 @@ export function calculateRegimen(catalogue, regimenId, inputs, acknowledgement) 
       source: {title: catalogue.source.title, version: catalogue.source.edition, locator: sourceLabel(d)},
       // This approval is the explicit user's acknowledgement for THIS calculation.
       // The shipped catalogue remains clinicalReview: pending.
-      review: {status: 'approved', reviewer: acknowledgement.reviewer.trim(),
+      review: {status: 'approved', basis: 'current-calculation-confirmation',
         reviewedOn: new Date().toISOString().slice(0, 10)}};
     const result = calculateDose({rule,
       inputs: {...inputs, alternativeIndex: inputs.alternatives?.[d.id]}, clinicianConfirmed: true});
@@ -55,7 +57,7 @@ export function calculateRegimen(catalogue, regimenId, inputs, acknowledgement) 
   if (issues.length) return {status: 'blocked', issues};
   return {status: 'ok', regimenId: r.id, catalogueVersion: catalogue.version,
     sourceScanSha256: catalogue.source.sha256, clinicalReview: r.clinicalReview,
-    reviewer: acknowledgement.reviewer.trim(), calculatedAt: new Date().toISOString(),
+    patient: patient.patient, calculatedAt: new Date().toISOString(),
     inputs, rows};
 }
 
@@ -63,9 +65,9 @@ export function summaryText(catalogue, calculation) {
   if (calculation?.status !== 'ok') return '';
   const r = catalogue.regimens.find(r => r.id === calculation.regimenId);
   const input = calculation.inputs;
-  return ['乳腺癌剂量计算 · 2.0.0 · 算术核对单（非处方）', r.section + ' / ' + r.subtype,
+  return ['乳腺癌剂量计算 · 2.1.0 · 算术核对单（非处方）', r.section + ' / ' + r.subtype,
     r.name, catalogue.source.title + ' · ' + sourceLabel(r), '目录版本：' + calculation.catalogueVersion,
-    '本次核对人：' + calculation.reviewer, '计算时间：' + calculation.calculatedAt,
+    '住院号：' + (calculation.patient.hospitalNumber || '未填写'), '患者年龄：' + (calculation.patient.ageYears ?? '未填写'), '计算时间：' + calculation.calculatedAt,
     '身高：' + (input.heightCm ?? '未填写') + ' cm；体重：' + (input.weightKg ?? '未填写') + ' kg',
     ...(r.drugs.some(d => d.kind === 'auc') ? ['肾功能：' + input.renalFunction.value + ' mL/min'] : []),
     ...calculation.rows.map(row => {

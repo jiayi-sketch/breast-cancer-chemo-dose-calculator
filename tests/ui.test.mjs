@@ -15,7 +15,7 @@ function setup(t) {
   // Only our reviewed application files are evaluated; no remote resources are loaded.
   window.document.write(readFileSync(new URL('manual.html', root), 'utf8'));
   window.eval(readFileSync(new URL('core.browser.js', root), 'utf8'));
-  for (const f of ['translations.browser.js','i18n.js','app.js']) window.eval(readFileSync(new URL(f, root), 'utf8'));
+  for (const f of ['history-engine.browser.js','translations.browser.js','i18n.js','app.js']) window.eval(readFileSync(new URL(f, root), 'utf8'));
   const el = id => window.document.getElementById(id);
   const input = (id, value) => {
     el(id).value = value;
@@ -73,7 +73,7 @@ for (const [mode, first, second, expected] of cases) {
 test('editing each relevant input immediately removes previous quantities and confirmation', t => {
   const {el, input, submit} = setup(t);
   for (const [id, value] of [['item-name','新的项目'], ['dose1','8'], ['height','181'],
-    ['weight','81'], ['reference','新的依据'], ['reviewer','新的核对人']]) {
+    ['weight','81'], ['reference','新的依据'], ['hospital-number','新的核对人']]) {
     el('example').click(); submit();
     assert.equal(el('result-content').hidden, false);
     input(id, value);
@@ -100,7 +100,7 @@ test('renal edits invalidate both confirmations and mode changes remove old coef
 
 test('missing evidence, out-of-range values and reversed ranges block output', t => {
   const {el, input, submit} = setup(t);
-  for (const [id, value] of [['reference',''], ['reviewer',''], ['item-name',''],
+  for (const [id, value] of [['reference',''],  ['item-name',''],
     ['height','79'], ['weight','351'], ['dose1','0'], ['dose1','']]) {
     el('example').click(); input(id,value); submit();
     assert.equal(el('result-content').hidden, true, id);
@@ -128,7 +128,7 @@ test('names and sources render as text, never executable markup; copy uses curre
 test('new patient clears all fields and results; help opens and closes', t => {
   const {el, submit} = setup(t);
   el('example').click(); submit(); el('clear').click();
-  for (const id of ['item-name','dose1','dose2','height','weight','reviewer','reference']) {
+  for (const id of ['item-name','dose1','dose2','height','weight','hospital-number','reference']) {
     assert.equal(el(id).value, '', id);
   }
   assert.equal(el('confirmed').checked, false);

@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var webRoot: URL!
     let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未知"
     let testing = CommandLine.arguments.contains("--self-test")
+    lazy var history = SecureHistory(testing: testing)
     var lastClipboardCount = -1
 
     var language = "zh-Hans"
@@ -52,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.userContentController.add(self, name: "copySummary")
         config.userContentController.add(self, name: "languagePreference")
         config.userContentController.add(self, name: "reportImport")
+        config.userContentController.add(self, name: "history")
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = false
@@ -92,6 +94,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame else { return }
+        if message.name == "history", let request=message.body as? [String:Any], let id=request["requestId"] as? String, id.count<=100 {
+            var response:[String:Any] = ["requestId":id,"ok":false,"error":"storage"]
+            do {
+                if request["op"] as? String == "read" {
+                    let (content,revision)=try history.read();response=["requestId":id,"ok":true,"content":content,"revision":revision]
+                } else if request["op"] as? String == "write", let content=request["content"] as? String, let revision=request["revision"] as? String,
+                          content.utf8.count<=SecureHistory.limit, let payload=try JSONSerialization.jsonObject(with:Data(content.utf8)) as? [String:Any], payload["schemaVersion"] as? Int == 1, let records=payload["records"] as? [Any], records.count<=500 {
+                    let ok=try history.write(content,revision:revision);response=["requestId":id,"ok":ok,"error":ok ? "" : "conflict"]
+                }
+            } catch { }
+            if let data=try? JSONSerialization.data(withJSONObject:response), let text=String(data:data,encoding:.utf8) { webView.evaluateJavaScript("window.ChemoHistory?.receive("+text+")",completionHandler:nil) }
+            return
+        }
         if message.name == "reportImport", let request = message.body as? [String: Any] {
             importReport(request)
             return
@@ -163,7 +178,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if testing {
             let script = """
-            for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+            await window.ChemoHistory.ready;
+            for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成测试']]) {
               document.getElementById(id).value = value;
               document.getElementById(id).dispatchEvent(new Event('input',{bubbles:true}));
             }
@@ -179,7 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 }
                 document.getElementById('report-reviewed').checked=true;document.getElementById('reports-match').click();
                 const match=document.querySelector('#report-matches [data-report-entry-id]');if(!match)throw new Error('No report match');match.click();
-                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成测试']]) {
                   const element=document.getElementById(id);element.value=value;element.dispatchEvent(new Event('input',{bubbles:true}));
                 }
                 document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
@@ -189,12 +205,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 const cleared=document.getElementById('raw-result').textContent==='' && document.getElementById('reports-match').disabled;
                 reportChecks.push({language:code,matched,cleared,passed:matched&&cleared});
               }
-              JSON.stringify({reportReady:window.ChemoReportReady,reportChecks,passed:reportChecks.every(r=>r.passed),ready:window.ChemoAppReady, bsa:window.DoseCore.calculateBsa({heightCm:180,weightKg:80}),
+              const historyChecks=await window.runHistorySelfTest();
+              return JSON.stringify({historyChecks,reportReady:window.ChemoReportReady,reportChecks,passed:reportChecks.every(r=>r.passed)&&historyChecks.passed,ready:window.ChemoAppReady, bsa:window.DoseCore.calculateBsa({heightCm:180,weightKg:80}),
             regimen:document.getElementById('entry-title').textContent,
             rows:reportChecks.length,
             rendered:document.querySelector('.drug-value').textContent});
             """
-            webView.evaluateJavaScript(script) { value, error in
+            webView.callAsyncJavaScript(script, arguments:[:], in:nil, in:.page) { outcome in
+                let value:Any?;let error:Error?
+                switch outcome {case .success(let result):value=result;error=nil;case .failure(let failure):value=nil;error=failure}
+                self.history.removeTestData()
                 if let error = error { print("SELF_TEST_ERROR: \(error)"); exit(1) }
                 else {
                     print("SELF_TEST_RESULT: \(value ?? "nil")")

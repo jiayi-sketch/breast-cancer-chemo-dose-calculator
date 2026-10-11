@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial */
+#history-dialog{width:min(960px,calc(100vw - 36px));max-height:85vh;overflow:auto;border:1px solid #bcd6e5;border-radius:12px;padding:22px;background:#fff;color:#17324a;box-sizing:border-box}
+#history-dialog::backdrop{background:#15314a55}
+.history-heading,.history-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.history-policy{display:flex!important;align-items:center;gap:8px;margin:16px 0}
+.history-policy input{width:auto!important}
+#history-query{display:block;width:100%;box-sizing:border-box;margin:6px 0 12px}
+.history-layout{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;min-height:160px;margin:14px 0}
+#history-list{max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+#history-list button{text-align:left;white-space:normal;overflow-wrap:anywhere}
+#history-list button[aria-pressed=true]{background:#dceffa;border-color:#0d649c}
+#history-preview{margin:0;max-height:340px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f9fd;border:1px solid #dceffa;padding:12px;font:inherit;font-size:13px}
+#history-confirmation{margin-top:14px;padding:12px;background:#fff4ec;border:1px solid #efcdb5}
+.patient-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+@media(max-width:760px){.history-layout{grid-template-columns:1fr}.patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#history-dialog{padding:14px}.history-actions button{flex:1}}
+
+#history-save-status{font-size:11px;max-width:260px;line-height:1.4;overflow-wrap:anywhere;color:inherit}

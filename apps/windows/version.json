@@ -1,5 +1,5 @@
 {
-  "version": "2.0.3",
-  "sharedCoreVersion": "2.0.0",
-  "scope": "Windows interface and installer revision"
+  "version": "2.1.0",
+  "sharedCoreVersion": "2.1.0",
+  "scope": "Local encrypted calculation history and patient metadata"
 }

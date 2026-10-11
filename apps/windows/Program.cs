@@ -32,6 +32,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
     private CoreWebView2Environment? environment;
     private string language = "zh-Hans";
     private readonly string preferencePath;
+    private readonly ChemoDose.Storage.HistoryStore history;
     private bool finishedTest;
     private string lastClipboard = "";
     private static bool SupportedLanguage(string? value) => value is "zh-Hans" or "zh-Hant" or "en";
@@ -66,6 +67,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
     {
         testing = args.Contains("--self-test");
         preferencePath = testing ? Path.Combine(profilePath,"language.json") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ChemoDose","language.json");
+        history = new ChemoDose.Storage.HistoryStore(testing ? Path.Combine(profilePath,"history-test") : Path.GetDirectoryName(preferencePath)!);
         try {
             if (File.Exists(preferencePath) && new FileInfo(preferencePath).Length <= 128) {
                 using var preference = JsonDocument.Parse(File.ReadAllText(preferencePath));
@@ -191,7 +193,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
         if (local) assets.TryGetValue(uri!.AbsolutePath, out bytes);
         if (bytes is not null && uri!.AbsolutePath.EndsWith(".html", StringComparison.Ordinal)) {
             // Windows presentation only; catalogue and dose rules stay shared.
-            string html = Encoding.UTF8.GetString(bytes).Replace("2.0.0", Version);
+            string html = Encoding.UTF8.GetString(bytes).Replace("2.1.0", Version);
             if (uri.AbsolutePath == "/index.html") html = html.Replace("</head>", "<link rel=\"stylesheet\" href=\"windows-desktop/desktop.css\"><script defer src=\"windows-desktop/desktop.js\"></script></head>");
             bytes = Encoding.UTF8.GetBytes(html);
         }
@@ -213,6 +215,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
         {
             using JsonDocument message = JsonDocument.Parse(e.WebMessageAsJson);
             JsonElement root = message.RootElement;
+            if (root.GetProperty("type").GetString() == "history") { HistoryRequest(root); return; }
             if (root.GetProperty("type").GetString() == "reportImport") { ImportReport(root); return; }
             if (root.GetProperty("type").GetString() == "languagePreference") {
                 string? saved = root.GetProperty("language").GetString();
@@ -241,6 +244,25 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
             if (testing) clipboardChecked.TrySetResult(false);
             web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "copySummaryResult", ok = false, requestId }));
         }
+    }
+
+    private void HistoryRequest(JsonElement request)
+    {
+        string? id = request.GetProperty("requestId").GetString();
+        if (id is null || id.Length > 100) return;
+        void Send(object response) => web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(response));
+        try {
+            if (request.GetProperty("op").GetString() == "read") {
+                var snapshot = history.Read();
+                Send(new { type="historyResult", requestId=id, ok=true, content=snapshot.Content, revision=snapshot.Revision });
+            } else if (request.GetProperty("op").GetString() == "write") {
+                string content=request.GetProperty("content").GetString()!, revision=request.GetProperty("revision").GetString()!;
+                using var payload=JsonDocument.Parse(content);
+                if(payload.RootElement.GetProperty("schemaVersion").GetInt32()!=1 || payload.RootElement.GetProperty("records").GetArrayLength()>500) throw new InvalidDataException();
+                bool ok=history.Write(content,revision);
+                Send(new {type="historyResult",requestId=id,ok,error=ok?"":"conflict"});
+            } else Send(new {type="historyResult",requestId=id,ok=false,error="storage"});
+        } catch(Exception) { Send(new {type="historyResult",requestId=id,ok=false,error="storage"}); }
     }
 
     private void ImportReport(JsonElement request)
@@ -290,7 +312,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
         // Only synthetic values. Exercises the embedded page in the actual Windows renderer.
         string result = await web.CoreWebView2.ExecuteScriptAsync("""
             (() => {
-              for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+              for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成测试']]) {
                 document.getElementById(id).value=value;
                 document.getElementById(id).dispatchEvent(new Event('input',{bubbles:true}));
               }
@@ -305,7 +327,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
               for (const code of ['zh-Hant','en','zh-Hans']) {
                 const chooser=document.getElementById('language');chooser.value=code;chooser.dispatchEvent(new Event('change',{bubbles:true}));
                 const cleared=document.getElementById('raw-result').textContent==='';
-                const retained=document.getElementById('height').value==='180' && document.getElementById('reviewer').value==='合成测试' && document.getElementById('bsa-value').textContent==='2.000';
+                const retained=document.getElementById('height').value==='180' && document.getElementById('hospital-number').value==='合成测试' && document.getElementById('bsa-value').textContent==='2.000';
                 const reset=!document.getElementById('confirmed').checked && !document.getElementById('renal-confirmed').checked;
                 document.getElementById('renal-confirmed').checked=true;
                 document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
@@ -323,7 +345,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
                 }
                 document.getElementById('report-reviewed').checked=true;document.getElementById('reports-match').click();
                 const match=document.querySelector('#report-matches [data-report-entry-id]');if(!match)throw new Error('No report match');match.click();
-                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','合成测试']]) {
+                for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成测试']]) {
                   const element=document.getElementById(id);element.value=value;element.dispatchEvent(new Event('input',{bubbles:true}));
                 }
                 document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;document.getElementById('calculate').click();
@@ -357,7 +379,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, screenshot);
         }
         bool passed = r.GetProperty("ready").GetBoolean() && r.GetProperty("version").GetString() == Version
-            && r.GetProperty("engine").GetString() == "2.0.0" && r.GetProperty("sharedCatalogueVersion").GetString() == "2.0.0" && r.GetProperty("count").GetInt32() == 52
+            && r.GetProperty("engine").GetString() == "2.1.0" && r.GetProperty("sharedCatalogueVersion").GetString() == "2.1.0" && r.GetProperty("count").GetInt32() == 52
             && r.GetProperty("rows").GetInt32() == 4 && r.GetProperty("first").GetString()!.StartsWith("150.00 mg / 次", StringComparison.Ordinal)
             && r.GetProperty("longName").GetBoolean() && r.GetProperty("fits").GetBoolean()
             && r.GetProperty("renalMethodRemoved").GetBoolean()
@@ -366,6 +388,11 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
             && r.GetProperty("languageSelectFits").GetBoolean()
             && r.GetProperty("cleared").GetBoolean() && r.GetProperty("notice").GetBoolean() && clipboardPassed;
         bool desktopPreviewsPassed = await CaptureDesktopPreviews();
+        await web.CoreWebView2.ExecuteScriptAsync("window.HistoryTestResult=null;window.runHistorySelfTest().then(r=>window.HistoryTestResult=r,e=>window.HistoryTestResult={passed:false,error:String(e)})");
+        string historyResult="null";
+        for(int i=0;i<100 && historyResult=="null";i++){await Task.Delay(100);historyResult=await web.CoreWebView2.ExecuteScriptAsync("window.HistoryTestResult");}
+        bool historyPassed=historyResult!="null" && JsonDocument.Parse(historyResult).RootElement.GetProperty("passed").GetBoolean();
+        passed=passed && historyPassed;
         VerifyChrome();
         bool framelessControlsPassed = true;
         bool languagePreferencePassed = File.Exists(preferencePath) && JsonDocument.Parse(File.ReadAllText(preferencePath)).RootElement.GetProperty("language").GetString() == "en";
@@ -400,7 +427,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
                   window.ChemoI18n.setLanguage({{language}});
                   document.getElementById('section-0').click();
                   document.querySelector('[data-entry-id="r001"]').click();
-                  for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','Synthetic QA']]) {
+                  for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','Synthetic QA']]) {
                     const field=document.getElementById(id);field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));
                   }
                   document.getElementById('renal-confirmed').checked=true;document.getElementById('confirmed').checked=true;

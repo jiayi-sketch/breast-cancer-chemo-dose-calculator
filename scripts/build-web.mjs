@@ -13,13 +13,16 @@ const target = new URL('apps/shared-web/core.browser.js', root);
 writeFileSync(target, wrapped);
 console.log('Built', fileURLToPath(target));
 const catalogue = JSON.parse(readFileSync(new URL('data/catalogue.json', root), 'utf8'));
+const history = readFileSync(new URL('packages/calculation-core/src/history.mjs', root), 'utf8').replace(/^export (const|function) /gm, '$1 ');
+writeFileSync(new URL('apps/shared-web/history-engine.browser.js', root),
+  '/* Generated from history.mjs; do not edit. */\nwindow.HistoryEngine = (function(){\n"use strict";\n' + history + '\nreturn {HISTORY_LIMIT,HISTORY_BYTES,patientInfo,normalizeRecord,readHistory,emptyHistory,changeHistory,searchHistory};\n})();\n');
 writeFileSync(new URL('apps/shared-web/catalogue.browser.js', root),
   '/* Generated from data/catalogue.json. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.ChemoCatalogue = ' + JSON.stringify(catalogue) + ';\n');
 const engine = readFileSync(new URL('packages/calculation-core/src/catalogue.mjs', root), 'utf8')
   .replace(/^import .*;\r?\n/gm, '').replace(/^export function /gm, 'function ');
 writeFileSync(new URL('apps/shared-web/catalogue-engine.browser.js', root),
   '/* Generated from catalogue.mjs. LicenseRef-ChemoDose-Academic-NonCommercial. */\nwindow.RegimenEngine = (function(){\n"use strict";\n' +
-  'const {calculateDose} = window.DoseCore;\n' + engine +
+  'const {calculateDose} = window.DoseCore;\nconst {patientInfo} = window.HistoryEngine;\n' + engine +
   '\nreturn {filterEntries, sourceLabel, standardDose, quantityLabel, calculateRegimen, summaryText};\n})();\n');
 
 const translations = JSON.parse(readFileSync(new URL('data/i18n.json', root), 'utf8'));

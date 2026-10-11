@@ -17,7 +17,7 @@ function setup(t,lang='zh-Hans') {
  };
  const choose=()=>{const b=w.document.querySelector('#report-matches [data-report-entry-id]');assert.ok(b,el('report-result').textContent);b.click();};
  const calculate=()=>{
-  for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','虚拟核对人']])input(id,v);
+  for(const[id,v]of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','虚拟核对人']])input(id,v);
   el('renal-confirmed').checked=true;el('confirmed').checked=true;el('calculate').click();
  };
  t.after(()=>w.happyDOM.abort());return {w,el,input,example,review,choose,calculate};
@@ -61,7 +61,7 @@ test('post-neoadjuvant shows only guideline references with no drug dose selecti
 test('switching patients clears all report fields and patient calculation inputs',t=>{
  const{el,example,review,choose,calculate}=setup(t);example();review();choose();calculate();el('reports-clear').click();
  for(const id of ['biopsy','postop','ihc','fish'])assert.equal(el('report-'+id).value,'');
- for(const id of ['height','weight','renal-value','reviewer','report-correction-reason'])assert.equal(el(id).value,'');
+ for(const id of ['height','weight','renal-value','hospital-number','report-correction-reason'])assert.equal(el(id).value,'');
  assert.equal(el('report-field-ER').value,'unknown');assert.equal(el('reports-match').disabled,true);
 });
 test('report instructions and HTML are displayed only as source text and cannot execute',t=>{

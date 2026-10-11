@@ -9,7 +9,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const root=new URL('../',import.meta.url), modern={window:{}};
 vm.createContext(modern);
-for(const n of ['core','catalogue','catalogue-engine','reports-engine','translations'])vm.runInContext(readFileSync(new URL('apps/shared-web/'+n+'.browser.js',root),'utf8'),modern);
+for(const n of ['core','history-engine','catalogue','catalogue-engine','reports-engine','translations'])vm.runInContext(readFileSync(new URL('apps/shared-web/'+n+'.browser.js',root),'utf8'),modern);
 const c=modern.window.ChemoCatalogue,r=modern.window.ReportEngine,engine=modern.window.RegimenEngine;
 const requests=[];
 const ack={confirmed:true,reviewer:'Synthetic QA'};

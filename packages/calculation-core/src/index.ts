@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Arithmetic migration prototype. No network, storage, UI or treatment selection.
 
-export const ENGINE_VERSION = '2.0.0';
+export const ENGINE_VERSION = '2.1.0';
 
 export const LEGACY_INPUT_LIMITS = Object.freeze({
   heightCm: Object.freeze([80, 250] as const),
@@ -19,7 +19,7 @@ export interface SourceReference {
 }
 
 export type Review = { status: 'pending' }
-  | { status: 'approved'; reviewer: string; reviewedOn: string };
+  | { status: 'approved'; reviewer?: string; basis?: 'current-calculation-confirmation'; reviewedOn: string };
 
 interface RuleMetadata {
   id: string;
@@ -142,7 +142,7 @@ export function calculateDose(request: unknown): CalculationResult {
     return fail('invalid', 'rule.source', 'MISSING_PROVENANCE', '规则缺少版本或依据。');
   }
   if (!record(rule.review) || rule.review.status !== 'approved'
-    || !text(rule.review.reviewer) || !text(rule.review.reviewedOn)) {
+    || (!text(rule.review.reviewer) && rule.review.basis !== 'current-calculation-confirmation') || !text(rule.review.reviewedOn)) {
     return fail('blocked', 'rule.review', 'RULE_NOT_REVIEWED', '此规则尚未完成专业核对。');
   }
   if (request.clinicianConfirmed !== true) {
@@ -239,7 +239,8 @@ export function calculateDose(request: unknown): CalculationResult {
     ruleVersion: rule.version, source: {
       title: rule.source.title, version: rule.source.version, locator: rule.source.locator,
     },
-    review: { status: 'approved', reviewer: rule.review.reviewer, reviewedOn: rule.review.reviewedOn },
+    review: { status: 'approved', ...(text(rule.review.reviewer) ? {reviewer: rule.review.reviewer} : {}),
+      ...(rule.review.basis === 'current-calculation-confirmation' ? {basis: 'current-calculation-confirmation' as const} : {}), reviewedOn: rule.review.reviewedOn },
     quantities, basis,
   };
 }

@@ -7,12 +7,12 @@ const root=new URL('../apps/shared-web/',import.meta.url);
 function setup(t){
  const w=new Window({settings:{enableJavaScriptEvaluation:true,disableJavaScriptFileLoading:true,disableCSSFileLoading:true,suppressInsecureJavaScriptEnvironmentWarning:true}});
  w.document.write(readFileSync(new URL('index.html',root),'utf8'));
- for(const file of ['core.browser.js','catalogue.browser.js','catalogue-engine.browser.js','translations.browser.js','i18n.js','catalogue-ui.js','reports-engine.browser.js','reports-ui.js'])w.eval(readFileSync(new URL(file,root),'utf8'));
+ for(const file of ['core.browser.js','catalogue.browser.js','history-engine.browser.js','catalogue-engine.browser.js','translations.browser.js','i18n.js','catalogue-ui.js','reports-engine.browser.js','reports-ui.js'])w.eval(readFileSync(new URL(file,root),'utf8'));
  w.eval(readFileSync(new URL('../windows/web/desktop.js',root),'utf8'));
  const el=id=>w.document.getElementById(id);
  const input=(id,value,event='input')=>{el(id).value=value;el(id).dispatchEvent(new w.Event(event,{bubbles:true}));w.ChemoWindowsDesktop.synchronize();};
  const choose=id=>{el('entry-list').querySelector('[data-entry-id=\"'+id+'\"]').click();w.ChemoWindowsDesktop.synchronize();};
- const fill=()=>{for(const [id,value]of [['height','180'],['weight','80'],['renal-value','50'],['reviewer','Synthetic QA']])input(id,value);el('renal-confirmed').checked=true;el('confirmed').checked=true;el('calculate').click();w.ChemoWindowsDesktop.synchronize();};
+ const fill=()=>{for(const [id,value]of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','Synthetic QA']])input(id,value);el('renal-confirmed').checked=true;el('confirmed').checked=true;el('calculate').click();w.ChemoWindowsDesktop.synchronize();};
  t.after(()=>w.happyDOM.abort());return{w,el,input,fill,choose};
 }
 test('classic regimen list follows the real selection path, retaining inputs and removing stale doses',t=>{
@@ -43,6 +43,6 @@ test('classic table keeps source schedule, duration and doses, and the header cl
  assert.ok(el('catalogue-workspace').querySelector(':scope > .patient-panel'));
  assert.equal(el('entry-list').querySelectorAll('.entry-button').length>0,true);
  input('report-biopsy','ER 80%; PR 20%; HER2 3+');el('windows-clear-case').click();w.ChemoWindowsDesktop.synchronize();
- for(const id of ['height','weight','renal-value','reviewer','report-biopsy'])assert.equal(el(id).value,'');
+ for(const id of ['height','weight','renal-value','hospital-number','report-biopsy'])assert.equal(el(id).value,'');
  assert.equal(el('copy').disabled,true);assert.equal(el('raw-result').textContent,'');
 });

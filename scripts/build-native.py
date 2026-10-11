@@ -50,7 +50,7 @@ def macos_in_stage(args, stage):
         'CFBundleIdentifier': 'org.chemodose.preview',
         'CFBundlePackageType': 'APPL',
         'CFBundleShortVersionString': VERSION,
-        'CFBundleVersion': '9',
+        'CFBundleVersion': '10',
         'CFBundleIconFile': 'AppIcon',
         'LSMinimumSystemVersion': '13.0',
         'NSHighResolutionCapable': True,
@@ -62,7 +62,7 @@ def macos_in_stage(args, stage):
     cache.mkdir(exist_ok=True)
     run('xcrun', 'swiftc', '-O', '-target', 'arm64-apple-macos13.0',
         '-module-cache-path', cache, '-framework', 'Cocoa', '-framework', 'WebKit', '-framework', 'Vision', '-framework', 'ImageIO',
-        ROOT / 'apps/macos/main.swift', '-o', binary)
+        ROOT / 'apps/macos/main.swift', ROOT / 'apps/macos/HistoryStore.swift', '-o', binary)
     icon_tool = build / 'draw-icon'
     run('xcrun', 'swiftc', '-module-cache-path', cache,
         ROOT / 'scripts/draw-icon.swift', '-o', icon_tool)

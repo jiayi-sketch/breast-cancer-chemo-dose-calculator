@@ -11,11 +11,11 @@ function setup(t) {
     suppressInsecureJavaScriptEnvironmentWarning:true,
     navigation:{disableMainFrameNavigation:true,disableChildFrameNavigation:true,disableChildPageNavigation:true}}});
   w.document.write(readFileSync(new URL('index.html',root),'utf8'));
-  for (const f of ['core.browser.js','catalogue.browser.js','catalogue-engine.browser.js','translations.browser.js','i18n.js','catalogue-ui.js']) w.eval(readFileSync(new URL(f,root),'utf8'));
+  for (const f of ['core.browser.js','catalogue.browser.js','history-engine.browser.js','catalogue-engine.browser.js','translations.browser.js','i18n.js','catalogue-ui.js']) w.eval(readFileSync(new URL(f,root),'utf8'));
   const el = id => w.document.getElementById(id);
   const input = (id,value,event='input') => { el(id).value=value; el(id).dispatchEvent(new w.Event(event,{bubbles:true})); };
   const select = id => { const b = w.document.querySelector('[data-entry-id="'+id+'"]'); assert.ok(b,id); b.click(); };
-  const fill = () => {input('height','180');input('weight','80');input('reviewer','合成测试');input('renal-value','50');el('renal-confirmed').checked=true;};
+  const fill = () => {input('height','180');input('weight','80');input('hospital-number','合成测试');input('renal-value','50');el('renal-confirmed').checked=true;};
   const calculate = () => {el('confirmed').checked=true;el('calculate').click();};
   const result = () => JSON.parse(el('raw-result').textContent);
   t.after(()=>w.happyDOM.abort());
@@ -70,7 +70,7 @@ test('missing inputs or kidney confirmation never leave partial or stale results
 });
 test('every patient or reviewer edit invalidates results and confirmation',t=>{
   const {el,input,fill,calculate}=setup(t);
-  for(const [id,value] of [['height','181'],['weight','81'],['renal-value','60'],['reviewer','新核对人']]){
+  for(const [id,value] of [['height','181'],['weight','81'],['renal-value','60'],['hospital-number','新核对人']]){
     fill();calculate();input(id,value);
     assert.equal(el('confirmed').checked,false,id);assert.equal(el('copy').disabled,true,id);
     assert.equal(el('raw-result').textContent,'',id);
@@ -93,7 +93,7 @@ test('subtype filter, search with no results, and reference cards clear calculat
   assert.match(el('reference-body').textContent,/TCbHP/);
 });
 test('oral dose is a single-drug reference and tamoxifen requires choosing one frequency',t=>{
-  const {el,input,calculate,select,result}=setup(t);el('section-2').click();select('r056');input('reviewer','测试');calculate();
+  const {el,input,calculate,select,result}=setup(t);el('section-2').click();select('r056');input('hospital-number','测试');calculate();
   assert.equal(el('raw-result').textContent,'');assert.match(el('message').textContent,/选择/);
   input('alt-r056-d01','0','change');calculate();assert.equal(result().rows[0].result.quantities[0].valueMg,10);
   assert.match(el('dose-table').textContent,/10.00 mg \/ 次；10 mg，每日2次/);
@@ -103,7 +103,7 @@ test('oral dose is a single-drug reference and tamoxifen requires choosing one f
 });
 test('four sections are populated; radiation is read-only; clearing removes patient data',t=>{
   const {el,fill,calculate}=setup(t);fill();calculate();el('clear-patient').click();
-  for(const id of ['height','weight','renal-value','reviewer'])assert.equal(el(id).value,'');
+  for(const id of ['height','weight','renal-value','hospital-number'])assert.equal(el(id).value,'');
   assert.equal(el('bsa-value').textContent,'—');assert.equal(el('confirmed').checked,false);
   for(let i=0;i<4;i++){el('section-'+i).click();assert.ok(el('entry-list').querySelectorAll('button').length>0);}
   assert.equal(el('dose-workspace').hidden,true);assert.match(el('entry-source').textContent,/PDF 95/);
@@ -120,6 +120,6 @@ test('guide text and reviewer input are rendered as text, without executable HTM
   const {w,el,input,fill,calculate,select}=setup(t);
   w.ChemoCatalogue.regimens[0].name='<img src=x onerror="window.bad=1">';select('r001');
   assert.equal(el('entry-title').querySelector('img'),null);
-  fill();input('reviewer','<script>window.bad=1</script>');calculate();
+  fill();input('hospital-number','<script>window.bad=1</script>');calculate();
   assert.equal(el('raw-result').querySelector('script'),null);assert.equal(w.bad,undefined);
 });

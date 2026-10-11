@@ -48,7 +48,7 @@
     if (b.renalMlMin !== undefined) return t('剂量 = ') + coeff + ' × (' + b.renalMlMin + ' + 25)';
     return t(b.alternativeIndex !== undefined ? '采用已明确选择的固定剂量及频次' : '采用人工录入并核对的固定剂量');
   }
-  function render(result, name, reference, reviewer) {
+  function render(result, name, reference, patient, rule, inputs) {
     el('result-content').hidden = false; el('empty-result').hidden = true; el('result-status').textContent = t('已计算 · 待复核');
     el('result-item').textContent = name;
     var labels = { single: '本次计算值', lower: '区间下限', upper: '区间上限', loading: '首剂', maintenance: '后续剂量' };
@@ -58,15 +58,17 @@
       if (q.schedule) card.appendChild(addText('p', q.schedule, 'quantity-schedule')); el('quantities').appendChild(card);
     });
     el('calculation-basis').textContent = formula(result); el('calculation-basis').style.whiteSpace = 'pre-line';
-    metadata('依据', reference); metadata('核对人', reviewer); metadata('时间', new Date().toLocaleString(L.language === 'en' ? 'en-US' : L.language === 'zh-Hant' ? 'zh-TW' : 'zh-CN'));
+    metadata('依据', reference); metadata('住院号', patient.hospitalNumber || t('未填写')); metadata('患者年龄', patient.ageYears === null ? t('未填写') : String(patient.ageYears)); metadata('时间', new Date().toLocaleString(L.language === 'en' ? 'en-US' : L.language === 'zh-Hant' ? 'zh-TW' : 'zh-CN'));
     metadata('核心', result.engineVersion + ' / '+t('人工输入规则'));
     el('raw-result').textContent = JSON.stringify(result, null, 2);
-    current = { result: result, name: name, reference: reference, reviewer: reviewer,
+    current = { result: result, name: name, reference: reference, patient: patient,
       summary: [t('乳腺癌剂量计算工具')+' · '+t('测试版')+' '+window.DoseCore.ENGINE_VERSION, t('计算项目：') + name,
         result.quantities.map(function(q){return t(labels[q.role]) + ': ' + q.valueMg.toFixed(2) + ' mg' + (q.schedule ? '；' + q.schedule : '');}).join('\n'),
-        formula(result), t('计算依据：') + reference, t('核对人：') + reviewer,
+        formula(result), t('计算依据：') + reference, t('住院号：') + (patient.hospitalNumber || t('未填写')), t('患者年龄：') + (patient.ageYears === null ? t('未填写') : patient.ageYears),
         t('完整数值（mg）：') + result.quantities.map(function(q){return String(q.valueMg);}).join(' / '),
         t('仅作算术核对；未执行临床剂量取整、剂量上限判断或自动减量。')].join('\n') };
+    var manual = {}; for (var id of ['item-name','kind','dose1','dose2','reference','schedule1','schedule2','alternative']) manual[id] = el(id).value;
+    window.ChemoHistory?.save({kind:'manual',title:name,patient:patient,inputs:inputs,manual:manual,summary:current.summary,results:[{drugId:'',engineVersion:result.engineVersion,quantities:result.quantities}]});
     if (window.innerWidth < 721) el('result-content').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   el('dose-form').addEventListener('input', function(e) {
@@ -79,10 +81,11 @@
   });
   el('dose-form').addEventListener('submit', function(e) {
     e.preventDefault(); resetResult();
-    var name = el('item-name').value.trim(), reference = el('reference').value.trim(), reviewer = el('reviewer').value.trim();
+    var name = el('item-name').value.trim(), reference = el('reference').value.trim();
+    var patient = window.HistoryEngine.patientInfo(el('patient-age').value, el('hospital-number').value);
+    if (patient.issues.length) return error(patient.issues.join(' '), 'patient-age');
     if (!name) return error('请填写计算项目或药物名称。', 'item-name');
     if (!reference) return error('请记录计算依据及其版本、页码或位置。', 'reference');
-    if (!reviewer) return error('请填写核对人。', 'reviewer');
     var kind = el('kind').value;
     var inputs = { heightCm: number('height'), weightKg: number('weight') };
     if (kind === 'auc') inputs.renalFunction = { value: number('renal-value'), unit: 'mL/min', confirmed: el('renal-confirmed').checked };
@@ -90,17 +93,17 @@
     var rule = { id: 'manual-' + kind, version: 'manual-entry-v1', kind: kind,
       dose: modes[kind][1] ? [number('dose1'), number('dose2')] : number('dose1'),
       source: { title: reference, version: '本次人工输入', locator: reference },
-      review: { status: 'approved', reviewer: reviewer, reviewedOn: new Date().toISOString().slice(0,10) } };
+      review: { status: 'approved', basis: 'current-calculation-confirmation', reviewedOn: new Date().toISOString().slice(0,10) } };
     if (kind === 'fixed_alt') rule.schedules = [el('schedule1').value.trim(), el('schedule2').value.trim()];
     var result = window.DoseCore.calculateDose({ rule: rule, inputs: inputs, clinicianConfirmed: el('confirmed').checked });
     if (result.status !== 'ok') return error(result.issues[0].message, result.issues[0].field);
-    render(result, name, reference, reviewer);
+    render(result, name, reference, patient.patient, rule, inputs);
   });
   function clear() { el('dose-form').reset(); setMode(); resetResult(); el('example-notice').hidden = true; }
   el('clear').addEventListener('click', function(){ clear(); notify('本次输入和结果已清空'); el('item-name').focus(); });
   el('example').addEventListener('click', function () {
     clear(); el('item-name').value = t('算术示例（非药物方案）'); el('dose1').value = '7.5'; el('height').value = '180'; el('weight').value = '80';
-    el('reference').value = t('虚构算术测试：BSA=2 m²，7.5×2=15；不对应药物方案。'); el('reviewer').value = t('测试');
+    el('reference').value = t('虚构算术测试：BSA=2 m²，7.5×2=15；不对应药物方案。');
     el('example-notice').hidden = false; notify('示例已载入，请核对后勾选确认');
   });
   el('copy').addEventListener('click', function () {
@@ -135,5 +138,6 @@
   document.addEventListener('chemo-language-change',function(){
     setMode(true); invalidate(); clearTimeout(toastTimer); el('toast').hidden=true;
   });
+  window.ChemoManualUI = {restoreHistory: function(record){clear();for(var id of Object.keys(record.manual))if(el(id))el(id).value=record.manual[id];setMode(true);for(var pair of [['hospital-number',record.patient.hospitalNumber],['patient-age',record.patient.ageYears],['height',record.inputs.heightCm],['weight',record.inputs.weightKg],['renal-value',record.inputs.renalFunction?.value]])el(pair[0]).value=pair[1]??'';el('renal-confirmed').checked=false;invalidate();notify('历史参数已载入，请重新核对后计算。');}};
   setMode(); window.ChemoAppReady = true;
 }());

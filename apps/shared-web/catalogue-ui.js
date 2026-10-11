@@ -114,7 +114,7 @@
     const bsa = window.DoseCore.calculateBsa({heightCm: number('height'), weightKg: number('weight')});
     el('bsa-value').textContent = bsa.status === 'ok' ? bsa.valueM2.toFixed(3) : '—';
   }
-  ['height', 'weight', 'renal-value', 'reviewer'].forEach(id => {
+  ['height', 'weight', 'renal-value', 'patient-age', 'hospital-number'].forEach(id => {
     el(id).addEventListener('input', () => {
       if (id === 'renal-value' || id === 'height' || id === 'weight') el('renal-confirmed').checked = false;
       invalidate(); updateBsa();
@@ -125,7 +125,7 @@
     if (!el('confirmed').checked) invalidate('请核对后再计算。');
   });
   el('clear-patient').addEventListener('click', () => {
-    ['height', 'weight', 'renal-value', 'reviewer'].forEach(id => { el(id).value = ''; });
+    ['height', 'weight', 'renal-value', 'patient-age', 'hospital-number'].forEach(id => { el(id).value = ''; });
     el('renal-confirmed').checked = false;
     el('alternatives').querySelectorAll('select').forEach(s => { s.value = ''; });
     invalidate('本次参数和结果已清空。'); updateBsa();
@@ -133,8 +133,9 @@
   el('search').addEventListener('input', renderList);
   el('subtype').addEventListener('change', renderList);
   el('calculate').addEventListener('click', () => {
-    const acknowledgement = {confirmed: el('confirmed').checked, reviewer: el('reviewer').value};
-    const inputs = {heightCm: number('height'), weightKg: number('weight'), alternatives: {}};
+    const acknowledgement = {confirmed: el('confirmed').checked};
+    const inputs = {heightCm: number('height'), weightKg: number('weight'), alternatives: {},
+      patient: {ageYears: el('patient-age').value, hospitalNumber: el('hospital-number').value}};
     if (selected?.drugs?.some(d => d.kind === 'auc')) inputs.renalFunction = {
       value: number('renal-value'), unit: 'mL/min', confirmed: el('renal-confirmed').checked};
     el('alternatives').querySelectorAll('select').forEach(s => { if (s.value !== '') inputs.alternatives[s.id.slice(4)] = Number(s.value); });
@@ -147,6 +148,9 @@
     current = result; renderRows(); el('copy').disabled = false; el('audit').hidden = false;
     el('raw-result').textContent = JSON.stringify(result, null, 2);
     el('summary-text').textContent = localizedSummary(result);
+    window.ChemoHistory?.save({kind:'regimen', entryId:selected.id, title:selected.name,
+      patient:result.patient, inputs:result.inputs, summary:localizedSummary({...result,reportReview:undefined}),
+      results:result.rows.map(r=>({drugId:r.drugId,engineVersion:r.result.engineVersion,quantities:r.result.quantities}))});
     message('已按当前参数计算 · 请复核各阶段、频次及每次给药量。', 'success');
   });
   el('copy').addEventListener('click', () => {
@@ -174,11 +178,13 @@
   el('about-close').addEventListener('click', () => el('about-dialog').close());
 
   function localizedSummary(calculation) {
-    // Translate controlled labels and catalogue fields only. Preserve user-entered reviewer verbatim.
+    // Translate controlled labels and catalogue fields only. Preserve patient identifiers verbatim.
     const r = cat.regimens.find(r => r.id === calculation.regimenId), input = calculation.inputs;
     return [t('乳腺癌剂量计算')+' · '+cat.appVersion+' · '+t('算术核对单（非处方）'),
       t(r.section)+' / '+t(r.subtype),t(r.name),t(cat.source.title)+' · '+t(engine.sourceLabel(r)),
-      t('目录版本：')+calculation.catalogueVersion,t('本次核对人：')+calculation.reviewer,
+      t('目录版本：')+calculation.catalogueVersion,
+      t('住院号：')+(calculation.patient.hospitalNumber || t('未填写')),
+      t('患者年龄：')+(calculation.patient.ageYears ?? t('未填写')),
       t('计算时间：')+calculation.calculatedAt,
       ...(calculation.reportReview ? [t('报告已人工核对；目录匹配不代表患者适用性。')] : []),
       t('身高：')+(input.heightCm ?? t('未填写'))+' cm; '+t('体重：')+(input.weightKg ?? t('未填写'))+' kg',
@@ -205,6 +211,14 @@
   el('catalogue-count').textContent = t('52 个方案 · 7 个单药参考');
   window.ChemoCatalogueUI = {
     invalidate,
+    restoreHistory(record) {
+      el('reports-clear')?.click();
+      if (!this.openEntry(record.entryId)) throw new Error(t('原方案已不在当前目录，请只查阅历史记录。'));
+      for (const [id,value] of [['hospital-number',record.patient.hospitalNumber],['patient-age',record.patient.ageYears],['height',record.inputs.heightCm],['weight',record.inputs.weightKg],['renal-value',record.inputs.renalFunction?.value]]) el(id).value=value ?? '';
+      el('alternatives').querySelectorAll('select').forEach(s=>{const v=record.inputs.alternatives?.[s.id.slice(4)];s.value=v===undefined?'':String(v);});
+      el('renal-confirmed').checked=false;window.ChemoReportReview=null;
+      invalidate('历史参数已载入，请重新核对后计算。');updateBsa();
+    },
     openEntry(id) {
       const entry=[...cat.regimens,...cat.referenceCards].find(r=>r.id===id);
       if (!entry) return false;
