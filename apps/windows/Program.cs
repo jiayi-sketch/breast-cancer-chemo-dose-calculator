@@ -414,7 +414,7 @@ internal sealed class DoseWindow : ChemoDose.Windowing.FramelessWindow
             using var screenshot = File.Create(Path.ChangeExtension(testReport,".ocr.png"));
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png,screenshot);
         }
-        FinishTest(passed && desktopPreviewsPassed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), clipboardPassed, desktopPreviewsPassed, framelessControlsPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
+        FinishTest(passed && desktopPreviewsPassed && languagePreferencePassed && ocrPassed, JsonSerializer.Serialize(new { page = r.Clone(), historyPassed, historyResult, clipboardPassed, desktopPreviewsPassed, framelessControlsPassed, languagePreferencePassed, ocr = ocr.RootElement.Clone() }));
     }
 
     private async Task<bool> CaptureDesktopPreviews()

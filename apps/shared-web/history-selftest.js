@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial */
 // Explicitly invoked only by native --self-test harnesses, with fictional data.
 window.runHistorySelfTest=async function(){
- const el=id=>document.getElementById(id);window.ChemoI18n.setLanguage('zh-Hans');
+ const el=id=>document.getElementById(id),initialLanguage=window.ChemoI18n.language;window.ChemoI18n.setLanguage('zh-Hans');
  await window.ChemoHistory.ready;await window.ChemoHistory.drain();
  if(!window.ChemoHistory.available)throw new Error('History unavailable');
  await window.ChemoHistory.save({kind:'regimen',entryId:'r001',title:'SYNTHETIC history test',patient:{ageYears:45,hospitalNumber:'0000123-SYNTHETIC'},inputs:{heightCm:180,weightKg:80,renalFunction:{value:50,unit:'mL/min'}},summary:'Synthetic patient record only',results:[]});
@@ -15,5 +15,6 @@ window.runHistorySelfTest=async function(){
  el('history-delete').click();el('history-confirm-delete').click();await window.ChemoHistory.drain();
  if(el('history-list').querySelector('button'))throw new Error('History deletion');
  el('history-query').value='';el('history-query').dispatchEvent(new Event('input',{bubbles:true}));
+ window.ChemoI18n.setLanguage(initialLanguage);
  return {passed:true,syntheticOnly:true,checks:['native encrypted save','query','preview','restore resets confirmation','three languages','delete']};
 };

@@ -31,3 +31,6 @@ test('manual calculations retain numeric evidence and restore without approval',
 test('packaged pages load history engine before consumers and no reviewer field remains',()=>{
  for(const page of ['index','manual']){const html=readFileSync(new URL(page+'.html',root),'utf8');const scripts=[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m=>m[1]);assert.ok(scripts.indexOf('history-engine.browser.js')>=0);assert.ok(scripts.indexOf('history-engine.browser.js')<scripts.indexOf('history-ui.js'));assert.ok(scripts.indexOf('history-engine.browser.js')<scripts.indexOf(page==='index'?'catalogue-engine.browser.js':'app.js'));assert.doesNotMatch(html,/id="reviewer"/);if(page==='index')assert.ok(scripts.includes('history-selftest.js'));for(const script of scripts)assert.ok(readFileSync(new URL(script,root)).length,script);}
 });
+test('native history self-test restores the language preference',async t=>{
+ const a=await setup(t);a.w.eval(readFileSync(new URL('history-selftest.js',root),'utf8'));a.w.ChemoI18n.setLanguage('en');const result=await a.w.runHistorySelfTest();assert.equal(result.passed,true);assert.equal(a.w.ChemoI18n.language,'en');
+});

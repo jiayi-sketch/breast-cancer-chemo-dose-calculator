@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if testing { print("SELF_TEST_STARTED");fflush(stdout) }
         if let saved = UserDefaults.standard.string(forKey: "interfaceLanguage"), supportedLanguages.contains(saved) { language = saved }
         let mainMenu = NSMenu()
         let appMenuItem = NSMenuItem()
@@ -179,6 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if testing {
+            print("SELF_TEST_PAGE_LOADED");fflush(stdout)
             let script = """
             await window.ChemoHistory.ready;
             for (const [id,value] of [['height','180'],['weight','80'],['renal-value','50'],['hospital-number','合成测试']]) {
