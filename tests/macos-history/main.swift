@@ -16,5 +16,5 @@ do {
  var rejected=false;do {_ = try reopened.read()}catch {rejected=true};try check(rejected,"tamper")
  var overwrite=false;do {_ = try reopened.write("{}",revision:read.1)}catch {overwrite=true};try check(overwrite,"no-overwrite")
  try check(try Data(contentsOf:file)==corrupt,"preserved")
- print("MAC_HISTORY_TEST: 7 checks passed (encrypted, reopen, CAS, tamper, preserved)")
+ print("MAC_HISTORY_TEST: 8 checks passed (encrypted, reopen, CAS, tamper, preserved)")
 }catch{print("MAC_HISTORY_TEST_FAILED: \(error)");exit(1)}

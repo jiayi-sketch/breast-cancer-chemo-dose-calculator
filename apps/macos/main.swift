@@ -65,9 +65,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.contentView = webView
         window.center()
         guard let resources = Bundle.main.resourceURL else { fatalError("Missing bundled resources") }
-        webRoot = resources.appendingPathComponent("web", isDirectory: true)
+        webRoot = resources.appendingPathComponent("web", isDirectory: true).absoluteURL
         refreshLanguage()
-        var page = URLComponents(url: webRoot.appendingPathComponent("index.html"), resolvingAgainstBaseURL: false)!
+        var page = URLComponents(url: webRoot.appendingPathComponent("index.html").absoluteURL, resolvingAgainstBaseURL: true)!
         page.queryItems = [URLQueryItem(name: "lang", value: language)]
         webView.loadFileURL(page.url!, allowingReadAccessTo: webRoot)
         window.makeKeyAndOrderFront(nil)
@@ -117,7 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
         if message.name == "languagePreference", let value = message.body as? String, supportedLanguages.contains(value) {
             language = value
-            UserDefaults.standard.set(value, forKey: "interfaceLanguage")
+            if !testing { UserDefaults.standard.set(value, forKey: "interfaceLanguage") }
             refreshLanguage()
             return
         }
