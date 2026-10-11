@@ -14,6 +14,10 @@ $preferences=Join-Path $env:LOCALAPPDATA 'ChemoDose'
 New-Item -ItemType Directory -Force $preferences | Out-Null
 Set-Content (Join-Path $preferences 'language.json') '{"language":"zh-Hant"}'
 Set-Content (Join-Path $preferences 'legacy-language.txt') 'zh-Hant'
+$historyPath=Join-Path $preferences 'history-v1.dat'
+$historyFixture=[byte[]](67,68,72,49,0,1,2,3)
+[IO.File]::WriteAllBytes($historyPath,$historyFixture)
+$historyHash=(Get-FileHash $historyPath -Algorithm SHA256).Hash
 $checks = @()
 foreach ($pass in @('install','upgrade')) {
   # NSIS /D must be the final, unquoted argument, including a path with spaces.
@@ -31,6 +35,7 @@ foreach ($pass in @('install','upgrade')) {
   }
   if (-not (Test-Path (Join-Path $destination 'keep.txt'))) { throw 'Installer removed unrelated file' }
   if ((Get-Content (Join-Path $preferences 'language.json') | ConvertFrom-Json).language -ne 'zh-Hant' -or (Get-Content (Join-Path $preferences 'legacy-language.txt')).Trim() -ne 'zh-Hant') { throw 'Language preference changed during installation' }
+  if ((Get-FileHash $historyPath -Algorithm SHA256).Hash -ne $historyHash) { throw 'Installer modified user history' }
   $checks += @{operation=$pass;passed=$true;payloadSha256=$hash.ToLowerInvariant();languagePreferencesRetained=$true}
 }
 $probe = "$PWD/build/verification/installed-selection.json"
@@ -47,6 +52,7 @@ foreach ($name in @('ChemoDose.exe','LICENSE.txt','WINDOWS-INSTALLATION.txt','Un
 if (-not (Test-Path (Join-Path $destination 'keep.txt'))) { throw 'Uninstaller removed unrelated file' }
 if ((Test-Path $registry) -or (Test-Path $desktop) -or (Test-Path (Join-Path $startMenu 'ChemoDose.lnk'))) { throw 'Uninstall entry or shortcut remained' }
 if ((Get-Content (Join-Path $preferences 'language.json') | ConvertFrom-Json).language -ne 'zh-Hant' -or (Get-Content (Join-Path $preferences 'legacy-language.txt')).Trim() -ne 'zh-Hant') { throw 'Uninstaller removed language preferences' }
+if ((Get-FileHash $historyPath -Algorithm SHA256).Hash -ne $historyHash) { throw 'Uninstaller removed user history' }
 $checks += @{operation='uninstall';passed=$true;unrelatedFileRetained=$true;languagePreferencesRetained=$true}
 @{passed=$true;version='2.1.0';host=[Environment]::OSVersion.VersionString;checks=$checks;xpWindows7DeviceTest='pending';note='Native hosted Windows tests; not old-system device or clinical validation.'} | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 build/verification/windows-installer-native.json
 $record=Get-Content build/release/windows-installer-build.json | ConvertFrom-Json

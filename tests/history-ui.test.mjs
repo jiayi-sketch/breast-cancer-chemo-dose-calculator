@@ -28,3 +28,6 @@ test('dynamic history controls translate without removing query input',async t=>
 test('manual calculations retain numeric evidence and restore without approval',async t=>{
  const a=await setup(t,backend(),'manual');await a.calculate();assert.equal(a.store.data.records.length,1);assert.equal(a.store.data.records[0].results[0].quantities[0].valueMg,15);a.el('history-list').querySelector('button').click();a.el('history-restore').click();assert.equal(a.el('hospital-number').value,'0000123');assert.equal(a.el('confirmed').checked,false);assert.equal(a.el('result-content').hidden,true);
 });
+test('packaged pages load history engine before consumers and no reviewer field remains',()=>{
+ for(const page of ['index','manual']){const html=readFileSync(new URL(page+'.html',root),'utf8');const scripts=[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m=>m[1]);assert.ok(scripts.indexOf('history-engine.browser.js')>=0);assert.ok(scripts.indexOf('history-engine.browser.js')<scripts.indexOf('history-ui.js'));assert.ok(scripts.indexOf('history-engine.browser.js')<scripts.indexOf(page==='index'?'catalogue-engine.browser.js':'app.js'));assert.doesNotMatch(html,/id="reviewer"/);if(page==='index')assert.ok(scripts.includes('history-selftest.js'));for(const script of scripts)assert.ok(readFileSync(new URL(script,root)).length,script);}
+});

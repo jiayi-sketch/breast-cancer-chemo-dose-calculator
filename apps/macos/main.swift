@@ -69,15 +69,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         var page = URLComponents(url: webRoot.appendingPathComponent("index.html"), resolvingAgainstBaseURL: false)!
         page.queryItems = [URLQueryItem(name: "lang", value: language)]
         webView.loadFileURL(page.url!, allowingReadAccessTo: webRoot)
-        if !testing { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
+        window.makeKeyAndOrderFront(nil)
+        if !testing { NSApp.activate(ignoringOtherApps: true) }
+        if testing { DispatchQueue.main.asyncAfter(deadline:.now()+90) { print("SELF_TEST_ERROR: native test timed out");fflush(stdout);self.history.removeTestData();exit(1) } }
     }
 
     @objc func showAbout() {
         let alert = NSAlert()
         alert.messageText = localized("乳腺癌剂量计算") + " " + appVersion
-        alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n输入仅保存在本次窗口内存中；支持离线报告文字识别与目录匹配。"
+        alert.informativeText = "仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\nApple 芯片测试版\n52个内置方案、7个单药剂量参考、18张指南摘要卡。\n依据所提供的2026 CSCO指南录入，未经独立临床验证。\n支持本机加密历史记录查询与删除；不保存病理原文或截图。"
         if language == "en" {
-            alert.informativeText = "For academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\nApple Silicon preview\n52 regimens, 7 single-drug dose references and 18 guideline summary cards.\nTranscribed from the supplied 2026 CSCO guideline; not independently clinically validated.\nInputs remain in window memory only. Offline report text extraction and catalogue matching are supported."
+            alert.informativeText = "For academic exchange only. Commercial use is prohibited.\nCopyright GitHub @jiayi-sketch\nApple Silicon preview\n52 regimens, 7 single-drug dose references and 18 guideline summary cards.\nTranscribed from the supplied 2026 CSCO guideline; not independently clinically validated.\nSupports encrypted local history, search and deletion. Pathology text and screenshots are not saved."
         } else if language == "zh-Hant" {
             alert.informativeText = localized(alert.informativeText)
         }

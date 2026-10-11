@@ -22,7 +22,7 @@ python3 scripts/build-native.py \
 
 ## Android
 
-aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 8，versionName 2.0.0，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView 持久化存储。
+aapt2 → javac → D8 → zipalign → apksigner。包名 org.chemodose.preview，versionCode 10，versionName 2.1.0，最低 API 28，目标 API 35。无网络、相机、通讯录、位置或文件读取权限；禁用备份和 WebView DOM 存储；2.1.0 历史通过原生 AES-GCM/Keystore 保存至 no-backup 私有目录。
 
 首次构建在工作目录 signing 下生成测试私钥和随机密码。**后续同包名升级须保存并沿用此密钥**，删除工作目录前请安全备份 signing。它不属于源码，不能上传 GitHub。
 

@@ -1,6 +1,6 @@
 # 乳腺癌剂量计算工具
 
-Breast Cancer Chemotherapy Dose Calculator · **Windows 2.0.3 无系统边框与统一安装包 · Mac / Android 2.0.0** · 源码公开 · 非商业学术授权
+Breast Cancer Chemotherapy Dose Calculator · **2.1.0 本机历史记录 · Windows / Mac / Android** · 源码公开 · 非商业学术授权
 
 本软件是一款面向医生和药师的乳腺癌治疗方案查阅与剂量算术核对工具。2.0.0 增加截图/图片离线 OCR、剪贴板病理文字导入及自动药物目录弹窗；识别结果需人工核对，方案由医生选定。内置数据依据《2026版中国临床肿瘤学会（CSCO）乳腺癌诊疗指南》整理，旨在帮助临床一线工作者更便捷地查阅方案，在录入并核对患者身高、体重及含卡铂方案所需的肾功能指标后，完成相应的剂量算术核对，减少手工查阅和计算所需的时间。
 
@@ -8,7 +8,17 @@ Breast Cancer Chemotherapy Dose Calculator · **Windows 2.0.3 无系统边框与
 
 本程序采用非商业学术交流授权，随附本版对应源码、许可、安装说明、校验记录和 SHA256SUMS.txt。仅限学术交流，禁止商业用途。反馈请使用虚构数据，不上传患者信息。后续版本将持续完善，感谢关注与耐心等待。
 
+## 2.1.0：历史查询、年龄与住院号
+
+三端新增本机加密计算历史，支持查询、查看、删除，以及载入参数后重新核对。移除核对人填写栏，新增可选的患者年龄和住院号；住院号保留前导零，两项不参与剂量公式。成功计算默认自动保存，可在历史窗口关闭。保存参数、方案、剂量数值、时间和版本，不保存病理原文、截图或识别结果，不上传患者资料。
+
+重新打开软件不会自动载入患者。载入历史参数会清除病理状态、旧结果和确认勾选，须重新核对计算。记录最多 500 条 / 8 MiB，不自动删除旧记录。Windows 现代和兼容界面共用记录，升级及卸载保留用户数据；若需清除，请先在程序中清空历史。详见 [历史记录说明](docs/history-2.1.0.md)。
+
+2.1.0 packages and native verification are being prepared on the `codex/local-history` branch. Previous downloads remain under their original version tags until the new release is published.
+
 ## English introduction
+
+**2.1.0** adds encrypted local calculation history across all three platforms, with search, read-only viewing, confirmed deletion and parameter reuse for a new check. The reviewer-name field is removed; optional patient age and hospitalization number are metadata only and do not alter dose formulas. Successful calculations are saved locally by default, with an opt-out switch. History excludes pathology text, screenshots and extracted findings. Previously confirmed parameters are never approved automatically when reused. See [history documentation](docs/history-2.1.0.md).
 
 **Breast Cancer Chemotherapy Dose Calculator** is a regimen reference and dose arithmetic verification tool for physicians and pharmacists. Version **2.0.0** adds offline screenshot/image OCR, pathology clipboard import and automatic drug catalogue dialogs. Extracted fields require manual review, and a clinician chooses the regimen. Its built-in catalogue is compiled from the **2026 Chinese Society of Clinical Oncology (CSCO) Breast Cancer Guidelines**. It helps clinical staff look up regimens and check dose arithmetic after entering and verifying height, weight and, for carboplatin-containing regimens, the required renal function parameter, reducing the time spent on manual reference lookup and calculation.
 
@@ -16,13 +26,13 @@ The program does not provide diagnoses, automatically select treatments or asses
 
 The program is distributed under a **noncommercial academic licence** with the corresponding source code, licence, installation instructions, verification records and `SHA256SUMS.txt`. **For academic exchange only. Commercial use is prohibited.** This is a source-available project, not an OSI-approved open-source licence. Please use fictional data when reporting issues and do not upload patient information. Updates will continue to improve the program.
 
-Version **1.0.3** offers **简体中文 / 繁體中文 / English** in the header on all three platforms. The setting covers interface labels, regimen names, guideline summaries, messages and copied verification sheets. Only the language preference is saved; patient inputs remain in window memory. Changing language retains entered parameters but clears results and requires renewed confirmation. Drug doses, schedules, source page references and calculation rules are shared across languages. Full audit JSON retains the original catalogue wording for traceability. Translations are for reference and have not undergone independent clinical validation.
+Version **1.0.3** offers **简体中文 / 繁體中文 / English** in the header on all three platforms. The setting covers interface labels, regimen names, guideline summaries, messages and copied verification sheets. In version 1.0.3 only the language preference was saved. Version 2.1.0 additionally supports encrypted local calculation history with an opt-out switch. Changing language retains entered parameters but clears results and requires renewed confirmation. Drug doses, schedules, source page references and calculation rules are shared across languages. Full audit JSON retains the original catalogue wording for traceability. Translations are for reference and have not undergone independent clinical validation.
 
 1.0.3 已移除肾功能“测定 / 估算方法与来源”填写栏，不再要求填写来源文字。保留肾功能值、mL/min 单位及适用性确认，Calvert 公式与方案剂量不变。
 
 Version 1.0.3 removes the renal function method/source text field and its required validation. The renal value, absolute mL/min unit and suitability confirmation remain; dose calculations are unchanged.
 
-## Windows 2.0.3：简洁窗口与安装包
+## 历史版本：Windows 2.0.3 简洁窗口与安装包
 
 2.0.3 去掉现代与 x86 兼容主窗口的 Windows 系统标题栏和厚边框，右上角采用蓝色最小化、最大化/还原及关闭按钮。可拖动顶栏空白处、双击最大化/还原，或拖动边缘缩放；最大化避开任务栏，初始窗口适配屏幕工作区。帮助入口和三种语言保留。
 
@@ -89,7 +99,7 @@ Windows 用户优先下载上方 2.0.3 安装包；如使用便携统一 EXE，�
 
 安卓：打开 APK，按系统提示安装。Mac：打开 DMG，将应用拖入 Applications。替换旧版前退出旧应用，打开后应显示 **2.0.0 内置方案版**，首页能直接看到 TCbHP 等方案。若 macOS 阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
 
-安装包、源码包和校验文件见 [GitHub 预发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.0.0)。应用不联网、无账户、不持久化患者记录；
+安装包、源码包和校验文件见 [GitHub 预发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.0.0)。2.0.0 应用不持久化患者记录；2.1.0 新增可关闭的本机加密计算历史，不联网、无账户；
 
 Windows：统一 EXE 无需判断位数。旧系统仍需 .NET Framework 4；Win10/11 通常已有兼容的 4.x。完整界面需要 WebView2；未检测到时自动打开兼容界面（无截图 OCR）。可从[微软官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)安装 Evergreen Runtime 后重新打开，以使用完整界面。2.0.0 已恢复报告文字识别与病理目录匹配工作流；可导入 PNG/JPEG 截图或复制病理文字，识别后自动展示药物目录；原文和受体结果须人工核对。
 
