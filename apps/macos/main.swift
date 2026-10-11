@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
         let allowed = url.isFileURL && url.standardizedFileURL.path.hasPrefix(webRoot.standardizedFileURL.path + "/")
+        if testing { print("SELF_TEST_NAVIGATION: allowed=\(allowed)");fflush(stdout) }
         decisionHandler(allowed ? .allow : .cancel)
     }
 

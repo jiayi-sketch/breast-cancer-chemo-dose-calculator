@@ -41,6 +41,13 @@ for(const fish of ['HER2 FISH：扩增，最终结论阳性。','FISH：HER2/CEP
 for(const sources of [{ihc:'ER(80%)',biopsy:'ER待出'},{ihc:'ER(80%)',biopsy:'ER(0%)'},{ihc:'x'.repeat(40001)},{ihc:1},{}])requests.push({op:'parse',sources});
 for(const entry of c.regimens)for(const drug of entry.drugs)requests.push({op:'standard',drug});
 for(const language of ['en','zh-Hant','zh-Hans'])for(const text of ['身高（cm）超出原程序的输入范围 80–250，请核对。','PDF 51、52 页 / 书页 34、35','首剂 840.00 mg；后续 420.00 mg / 次','仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch','治疗栏目'])requests.push({op:'translate',language,text});
+const h=modern.window.HistoryEngine;
+const historyRecord={id:'synthetic-history',savedAt:'2026-10-11T01:02:03.000Z',kind:'regimen',entryId:'r001',patient:{ageYears:45,hospitalNumber:'0000123'},inputs:{heightCm:180,weightKg:80},title:'Synthetic',summary:'Fictional record',appVersion:'2.1.0',catalogueVersion:'2026.10.02',language:'en',results:[]};
+const historyState=h.changeHistory(h.emptyHistory(),{op:'add',record:historyRecord});
+requests.push({op:'history-read',content:JSON.stringify(historyState)}, {op:'history-record',record:historyRecord});
+for(const operation of [{op:'add',record:historyRecord},{op:'preference',autoSave:false},{op:'delete',id:historyRecord.id},{op:'clear'}])requests.push({op:'history-change',state:historyState,operation});
+for(const query of ['0000123','45','Synthetic','none'])requests.push({op:'history-search',records:historyState.records,query});
+for(const ageYears of [0,120,45.5,121])requests.push({op:'history-record',record:{...historyRecord,patient:{...historyRecord.patient,ageYears}}});
 const temp=mkdtempSync(join(tmpdir(),'chemodose-legacy-'));
 try {
  const path=join(temp,'vectors.jsonl');writeFileSync(path,requests.map(v=>JSON.stringify(v)).join('\n'));
@@ -50,7 +57,7 @@ try {
  const clean=value=>JSON.parse(JSON.stringify(value,(k,v)=>['calculatedAt','reviewedOn'].includes(k)?undefined:v));
  for(let i=0;i<requests.length;i++){
   const q=requests[i],got=outputs[i];let expected;
-  try {if(q.op==='dose')expected=engine.calculateRegimen(c,q.id,q.inputs,q.acknowledgement);else if(q.op==='parse')expected=r.parseReports(q.sources);else if(q.op==='match')expected=r.matchReportCatalogue(q.parsed,q.values,q.context,c);else if(q.op==='standard')expected=engine.standardDose(q.drug);else {assert.equal(typeof got,'string');if(q.language!=='zh-Hans')assert.ok(!/[\u4e00-\u9fff]/.test(got)||q.language==='zh-Hant');continue;}}
+  try {if(q.op==='dose')expected=engine.calculateRegimen(c,q.id,q.inputs,q.acknowledgement);else if(q.op==='parse')expected=r.parseReports(q.sources);else if(q.op==='match')expected=r.matchReportCatalogue(q.parsed,q.values,q.context,c);else if(q.op==='standard')expected=engine.standardDose(q.drug);else if(q.op==='history-read')expected=h.readHistory(q.content);else if(q.op==='history-record')expected=h.normalizeRecord(q.record);else if(q.op==='history-change')expected=h.changeHistory(q.state,q.operation);else if(q.op==='history-search')expected=h.searchHistory(q.records,q.query);else {assert.equal(typeof got,'string');if(q.language!=='zh-Hans')assert.ok(!/[\u4e00-\u9fff]/.test(got)||q.language==='zh-Hant');continue;}}
   catch(e){assert.ok(got.exception,'Expected failure for '+i);continue;}
   assert.ok(!got.exception,'Jint failure '+i+': '+got.exception);
   // Tolerate only IEEE-754 last-bit differences, not rounded display differences.

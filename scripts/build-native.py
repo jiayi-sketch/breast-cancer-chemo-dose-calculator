@@ -102,12 +102,10 @@ def macos_in_stage(args, stage):
         '尚未经独立临床验证；支持离线报告文字识别与目录匹配，不自动推荐治疗或调整剂量。\n'
         '仅限于学术交流，严禁商业用途\n版权所有 GitHub @jiayi-sketch\n对应源码与非商业学术授权见随包 LICENSE.txt。\n', encoding='utf-8')
     dmg = args.output / f'ChemoDose-{VERSION}-macos-arm64.dmg'
-    # Build HFS+ entirely in userspace, then compress to a normal UDZO disk image.
-    # This avoids requiring a mounted virtual disk during packaging.
-    hybrid = build / 'preview-hfs.dmg'
-    run('hdiutil', 'makehybrid', '-hfs', '-hfs-volume-name', 'ChemoDose Preview',
-        '-o', hybrid, stage, '-ov')
-    run('hdiutil', 'convert', hybrid, '-format', 'UDZO', '-o', dmg, '-ov')
+    # APFS avoids makehybrid synthesizing FinderInfo on signed resources.
+    # The final mounted bundle must pass codesign verification, not just DMG CRC.
+    run('hdiutil', 'create', '-volname', 'ChemoDose', '-srcfolder', stage,
+        '-format', 'UDZO', '-fs', 'APFS', '-o', dmg, '-ov')
     run('hdiutil', 'verify', dmg)
     return dmg
 

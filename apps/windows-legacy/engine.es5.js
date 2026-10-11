@@ -22,6 +22,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 // SPDX-License-Identifier: LicenseRef-ChemoDose-Academic-NonCommercial
 // Only the shared, embedded engine runs here. Patient text is never executed.
 var window = {};
+Number.isInteger = function (n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; };
 Number.isFinite = function (n) { return typeof n === 'number' && isFinite(n); };
 Object.assign = function (target) { for (var i = 1; i < arguments.length; i++) {
     var s = arguments[i];
