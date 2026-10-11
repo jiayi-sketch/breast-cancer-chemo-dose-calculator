@@ -1,129 +1,85 @@
 # 乳腺癌剂量计算工具
 
-Breast Cancer Chemotherapy Dose Calculator · **2.1.0 本机历史记录 · Windows / Mac / Android** · 源码公开 · 非商业学术授权
+Breast Cancer Chemotherapy Dose Calculator · 2.1.0
 
-本软件是一款面向医生和药师的乳腺癌治疗方案查阅与剂量算术核对工具。2.0.0 增加截图/图片离线 OCR、剪贴板病理文字导入及自动药物目录弹窗；识别结果需人工核对，方案由医生选定。内置数据依据《2026版中国临床肿瘤学会（CSCO）乳腺癌诊疗指南》整理，旨在帮助临床一线工作者更便捷地查阅方案，在录入并核对患者身高、体重及含卡铂方案所需的肾功能指标后，完成相应的剂量算术核对，减少手工查阅和计算所需的时间。
+把方案查阅和剂量计算放在同一个界面里，方便医生和药师少一些来回翻找和重复计算。
 
-本程序不提供诊断，不自动选择治疗方案，也不判断患者适用性；内置内容尚未经独立临床验证。目前提供 Android、Apple 芯片 Mac 和 Windows x64 版本：Android 9 及以上、macOS 13 及以上，以及 Windows 10 22H2 / Windows 11（需 Microsoft WebView2 Runtime）。已新增面向 Windows 7 SP1 / Windows XP SP3 32 位的兼容预览版（需 .NET Framework 4；作者已反馈统一 EXE 在 Win7 x86 真机验证通过，XP 仍待验收）；详见 [兼容版说明](docs/windows-legacy.md)。公开发布的旧版本仍不支持这些系统。iOS 版本尚未提供，后续更新进展以项目公告为准；近期暂无 Intel 芯片 Mac 版本支持计划。
+内置方案按《2026版中国临床肿瘤学会（CSCO）乳腺癌诊疗指南》整理，共有 52 个方案、7 个单药剂量参考和 18 张指南摘要。选择方案后，可以查看药物、标准剂量、给药日、疗程和指南页码，再根据核对后的患者参数计算剂量。
 
-本程序采用非商业学术交流授权，随附本版对应源码、许可、安装说明、校验记录和 SHA256SUMS.txt。仅限学术交流，禁止商业用途。反馈请使用虚构数据，不上传患者信息。后续版本将持续完善，感谢关注与耐心等待。
+软件也支持导入病理文字和截图，识别后列出相关的药物目录。原文和识别结果需要人工核对，治疗方案由医生选择。软件不提供诊断，也不判断某个方案是否适合某位患者。内置内容尚未经过独立临床验证。
 
-## 2.1.0：历史查询、年龄与住院号
+目前提供 Windows、Apple 芯片 Mac 和 Android 版本，界面可切换简体中文、繁體中文和 English。iOS 版本暂未提供，近期也没有 Intel Mac 版本。
 
-三端新增本机加密计算历史，支持查询、查看、删除，以及载入参数后重新核对。移除核对人填写栏，新增可选的患者年龄和住院号；住院号保留前导零，两项不参与剂量公式。成功计算默认自动保存，可在历史窗口关闭。保存参数、方案、剂量数值、时间和版本，不保存病理原文、截图或识别结果，不上传患者资料。
+## 2.1.0 更新
 
-重新打开软件不会自动载入患者。载入历史参数会清除病理状态、旧结果和确认勾选，须重新核对计算。记录最多 500 条 / 8 MiB，不自动删除旧记录。Windows 现代和兼容界面共用记录，升级及卸载保留用户数据；若需清除，请先在程序中清空历史。详见 [历史记录说明](docs/history-2.1.0.md)。
+这次加入了历史记录。算完后可以保存在本机，下次按住院号等信息查找，查看当时的参数和结果，也可以删除记录。需要再次计算时，可以载入旧参数，但仍要重新核对和确认。
 
-[2.1.0 下载与源码](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.1.0) · [本版验证记录](docs/verification-2.1.0.md)。202 项共享/页面测试、835 组旧引擎对照及 Windows / Mac 原生历史检查通过；Android 原生历史读写验收与 Win7/XP 本版真机验收仍待完成。
+患者信息中增加了可选的年龄和住院号，不再要求填写审核人姓名。住院号会保留开头的零；年龄和住院号只用于记录，不参与剂量计算。
 
-## English introduction
+历史默认自动保存，可以在历史窗口关闭。记录在本机加密存储，不上传、不跨设备同步，也不保存病理原文、截图或识别结果。最多保存 500 条，文件上限为 8 MiB；达到上限会提示，不会悄悄删掉旧记录。具体用法见 [历史记录说明](docs/history-2.1.0.md)。
 
-**2.1.0** adds encrypted local calculation history across all three platforms, with search, read-only viewing, confirmed deletion and parameter reuse for a new check. The reviewer-name field is removed; optional patient age and hospitalization number are metadata only and do not alter dose formulas. Successful calculations are saved locally by default, with an opt-out switch. History excludes pathology text, screenshots and extracted findings. Previously confirmed parameters are never approved automatically when reused. See [history documentation](docs/history-2.1.0.md).
+## 下载与安装
 
-**Breast Cancer Chemotherapy Dose Calculator** is a regimen reference and dose arithmetic verification tool for physicians and pharmacists. Version **2.0.0** adds offline screenshot/image OCR, pathology clipboard import and automatic drug catalogue dialogs. Extracted fields require manual review, and a clinician chooses the regimen. Its built-in catalogue is compiled from the **2026 Chinese Society of Clinical Oncology (CSCO) Breast Cancer Guidelines**. It helps clinical staff look up regimens and check dose arithmetic after entering and verifying height, weight and, for carboplatin-containing regimens, the required renal function parameter, reducing the time spent on manual reference lookup and calculation.
+[2.1.0 发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.1.0) 提供安装包、完整源码、许可、使用说明和 SHA256 校验文件。目前为预发布版。
 
-The program does not provide diagnoses, automatically select treatments or assess patient suitability. The built-in content has **not undergone independent clinical validation**. Available platforms are **Android 9 or later**, **Apple Silicon Macs running macOS 13 or later**, and **Windows 10 22H2 / Windows 11 x64** with Microsoft WebView2 Runtime. An x86 compatibility preview targeting Windows 7 SP1 and Windows XP SP3 is now available; it requires .NET Framework 4. On October 6, 2026, the author reported that the unified EXE passed device verification on Windows 7 x86 and Windows 10 x64. XP device acceptance remains pending. See [compatibility notes](docs/windows-legacy.md). Previously published builds do not support these legacy systems. An iOS version is not currently available; future plans will be announced in this repository. Intel Mac support is not planned in the near term.
-
-The program is distributed under a **noncommercial academic licence** with the corresponding source code, licence, installation instructions, verification records and `SHA256SUMS.txt`. **For academic exchange only. Commercial use is prohibited.** This is a source-available project, not an OSI-approved open-source licence. Please use fictional data when reporting issues and do not upload patient information. Updates will continue to improve the program.
-
-Version **1.0.3** offers **简体中文 / 繁體中文 / English** in the header on all three platforms. The setting covers interface labels, regimen names, guideline summaries, messages and copied verification sheets. In version 1.0.3 only the language preference was saved. Version 2.1.0 additionally supports encrypted local calculation history with an opt-out switch. Changing language retains entered parameters but clears results and requires renewed confirmation. Drug doses, schedules, source page references and calculation rules are shared across languages. Full audit JSON retains the original catalogue wording for traceability. Translations are for reference and have not undergone independent clinical validation.
-
-1.0.3 已移除肾功能“测定 / 估算方法与来源”填写栏，不再要求填写来源文字。保留肾功能值、mL/min 单位及适用性确认，Calvert 公式与方案剂量不变。
-
-Version 1.0.3 removes the renal function method/source text field and its required validation. The renal value, absolute mL/min unit and suitability confirmation remain; dose calculations are unchanged.
-
-## 历史版本：Windows 2.0.3 简洁窗口与安装包
-
-2.0.3 去掉现代与 x86 兼容主窗口的 Windows 系统标题栏和厚边框，右上角采用蓝色最小化、最大化/还原及关闭按钮。可拖动顶栏空白处、双击最大化/还原，或拖动边缘缩放；最大化避开任务栏，初始窗口适配屏幕工作区。帮助入口和三种语言保留。
-
-Windows 新版参考 [0.2.2 发布时的原 Windows 程序](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v0.2.2-preview)，恢复深蓝标题栏与治疗阶段侧栏、顶部参数区、左侧可见方案列表，以及右侧说明和药物表格。长方案名称自动换行，给药时间与疗程分别展示；出处、人工核对和完整核对单继续保留。标题栏可清空本次病例。现代界面和 x86 兼容界面都支持简体中文、繁體中文与 English。
-
-推荐下载 [Windows 安装包](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/ChemoDose-2.0.3-windows-setup.exe)：按当前用户安装，无需管理员权限，提供开始菜单、可选桌面快捷方式和卸载入口。安装后仍自动选择适合当前系统的界面。也可下载 [统一便携 EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/ChemoDose-2.0.3-windows-unified.exe)。两者包含同一套程序。
-
-190 项共享与页面测试、821 组旧引擎对照、47 项统一入口检查，以及原生安装、覆盖安装、卸载和双界面检查均通过；新增无系统标题栏、八方向缩放触达、最小化/最大化/还原/关闭及三语按钮名称检查。测试使用虚构数据，宿主为 Windows NT 10.0.26100.0。
-
-本次只修订 Windows 界面与分发方式。共享方案库、计算核心、Mac 和 Android 保持 2.0.0。旧版 2.0.0 的 Win7 x86 / Win10 x64 作者真机反馈不自动适用于新文件；2.0.3 安装包在这些设备上需重新验收，XP 真机验收仍待完成。详见 [安装说明](docs/windows-installation.md) 与 [2.0.3 验证记录](docs/verification-2.0.3-windows.md)。
-
-Windows **2.0.3** removes the main window’s native title bar and thick frame in both Windows interfaces. A blue strip retains minimize, maximize/restore, close and drag movement; edge resizing remains available. Maximization respects the monitor’s working area, and the initial window fits that area. It retains the original Windows layout distributed in v0.2.2-preview: a blue header and stage navigation, patient parameters at the top, a visible regimen list on the left, and notes and medication results on the right. Long names wrap; administration and duration are separate columns. Report import, manual review and three languages remain available. The [per-user installer](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/ChemoDose-2.0.3-windows-setup.exe) provides shortcuts and an uninstall entry; the [portable EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/ChemoDose-2.0.3-windows-unified.exe) contains the same application. The shared clinical catalogue, calculation core, Mac and Android remain at 2.0.0. 190 shared/DOM tests, 821 legacy-engine comparison vectors, 47 launcher checks and native install/reinstall/uninstall and interface checks passed on hosted Windows NT 10.0.26100.0 with synthetic data. Device feedback for the previous 2.0.0 EXE does not establish acceptance of these new files. See [interface changes](docs/windows-interface-2.0.3.md).
-
-[Windows 2.0.3 发布页](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.0.3) · [本版完整源码 ZIP](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/ChemoDose-2.0.3-windows-source.zip) · [本版 SHA256SUMS.txt](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.0.3/SHA256SUMS.txt)
-
-## 2.0.0 预发布
-
-新增“导入截图 / 图片”和“从剪贴板导入”。可勾选本次窗口返回前台时自动导入新内容；只有明确启用后才读取新剪贴板，不在后台监听。识别后弹出受体字段、待核对条件、方案中的药物、分阶段标准剂量、疗程及 PDF 页码。未知治疗阶段按术前/術后分别展示目录，不能将候选列表当成个体化处方。
-
-已恢复“报告识别与病理匹配”入口：四类文字报告、ER/PR/HER2/ISH/Ki-67 原文证据、人工修正依据、治疗阶段等核对、方案目录筛选及剂量页衔接。三端使用相同代码，支持简体中文、繁体中文和 English。待出或冲突不会直接生成匹配；新辅助后只进入衔接摘要，不套用初始辅助化疗。详见 [报告匹配说明](docs/report-matching.md)。
-
-This preview restores the original text-report workflow on all three platforms: source-attributed receptor extraction, manual corrections, clinical context review, catalogue matching and a deliberate transition into dose verification. Pending or conflicting findings block matching. Post-neoadjuvant review opens guideline summaries rather than initial adjuvant regimens. Offline PNG/JPEG screenshot OCR is included on modern Windows, Mac and Android. The x86 compatibility edition supports text import and dialogs only; scanned PDFs must first be converted into images. This preview has not undergone independent clinical validation.
-
-安装包为 `ChemoDose-2.0.0-android.apk`、`ChemoDose-2.0.0-macos-arm64.dmg` 和 `ChemoDose-2.0.0-windows-x64.exe`。新增 `ChemoDose-2.0.0-windows-x86-legacy.exe` 和对应运行配置文件，另有便于解压安装的兼容版 ZIP。本版安装包供技术测试，实际下载以 GitHub Releases 中已发布的附件为准。旧版 [1.0.3](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v1.0.3) 不含报告匹配功能。
-
-## Windows 统一入口
-
-新增 `ChemoDose-2.0.0-windows-unified.exe`，将现代 x64 与 x86 兼容引擎打入一个下载文件，按系统版本、架构和 WebView2 安装情况自动选择界面。用户无需自行区分位数；旧系统仍须 .NET Framework 4，兼容界面不含图片 OCR。目标范围不等于全部设备已验收，详见 [统一入口说明](docs/windows-unified.md)。下载以 Releases 附件为准，原分立附件继续保留。
-
-A unified Windows EXE bundles the existing modern x64 and x86 compatibility engines and selects the interface automatically. Legacy systems still require .NET Framework 4; image OCR is available only in the modern interface. See [unified Windows notes](docs/windows-unified.md) for prerequisites and validation status.
-
-## 语言设置
-
-1.0.3 在 Windows、Mac 和 Android 页头提供 **简体中文 / 繁體中文 / English**。界面、方案名称、摘要、提示和复制核对单随语言切换。三端只保存语言偏好，不保存病例参数；切换语言会保留输入、清除旧结果并要求重新确认。药物数值、频次、出处及公式不变，完整 JSON 核对记录保留原始目录文字。翻译核对说明见 [语言核对记录](docs/language-review.md)。
-
-Windows EXE、Android APK 和 Apple 芯片 Mac DMG 使用同一份方案库和计算核心；Windows 2.0.3 使用参考原 Windows 版本的独立布局。1.0.1 的 Windows 版采用全新原生外壳，包含与 Mac 相同的内置方案、分阶段剂量核对、自定义单药页面、复制功能和两行非商业声明。
-
-本版修正了 0.1.0 仅支持人工录入的偏差：根据作者原 Windows v3.0.2 程序恢复目录，并对照作者提供的《2026 CSCO乳腺癌诊疗指南》扫描页重新录入。包含 **52 个治疗方案、7 个单药剂量参考、18 张指南摘要卡**；
-
-0.2.1 修复方案列表条目被压缩导致文字越出选中框的问题：条目按内容自动增高，长名称完整换行；选中框与右侧方案同步刷新，分型下拉框统一为 44px 高度。方案内容和计算公式与 0.2.0 一致。
-
-## 使用
-
-1. 选择“术前新辅助治疗 / 术后辅助治疗 / 后续内分泌治疗 / 保乳术后治疗”，按分型或方案、药物名称查找。
-2. 内置条目直接展示药物、标准剂量、给药日、疗程、推荐摘要和 PDF / 书页依据。
-3. 输入身高、体重；含卡铂时填写肾功能值，并核对单位与适用性。固定剂量条目不要求身高体重。
-4. 可选填写患者年龄和住院号，核对并确认本次方案和参数后计算各药每次给药量，按需复制核对单；核对人无需填写。
-
-首剂 / 后续剂量、剂量区间、序贯阶段分别显示。TC 4 周期和 6 周期为不同条目。他莫昔芬的两种频次必须选择其一。修改输入、切换方案、撤销确认会清除旧结果；任何药物缺少必要参数时，不输出部分结果。自定义单药算术核对作为次级页面保留。
-
-内分泌条目是单药剂量参考，联合方案及 OFS 条件须结合指南摘要核对。放疗卡为只读摘要，不生成化疗剂量。报告匹配仅检索目录，不自动选择治疗、评估患者适用性、临床取整、减量或判断累计剂量上限。本次核对署名不是身份认证或独立临床审批。
-
-## 安装
-
-| 文件 | 适用平台 | 说明 |
+| 平台 | 下载 | 安装说明 |
 | --- | --- | --- |
-| [Windows 安装包（推荐）](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-windows-setup.exe) | 现代 x64 / x86 兼容界面自动选择 | 当前用户安装、快捷方式和卸载入口；现代界面需要 WebView2，旧系统需要 .NET Framework 4 |
-| [Windows 统一便携 EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-windows-unified.exe) | 与安装包相同 | 两种界面共用本机历史，不用自行判断位数 |
-| [Android APK](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-android.apk) | Android 9+ | 沿用签名密钥，可覆盖安装；本版原生历史验收待完成 |
-| [Mac DMG](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-macos-arm64.dmg) | Apple 芯片，macOS 13+ | 拖入 Applications；仅本地 ad-hoc 签名，未公证；原生历史自检通过 |
+| Windows | [安装包](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-windows-setup.exe) / [便携 EXE](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-windows-unified.exe) | 自动选择现代 x64 或 x86 兼容界面，无需自己判断位数。安装包提供快捷方式和卸载入口。 |
+| Mac | [DMG](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-macos-arm64.dmg) | Apple 芯片，macOS 13 及以上。打开后将应用拖入 Applications。尚未进行 Developer ID 签名或公证。 |
+| Android | [APK](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-android.apk) | Android 9 及以上。沿用原签名密钥，可覆盖安装；本版历史功能仍需手机实测。 |
 
-[完整源码 ZIP](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-source.zip) · [SHA256SUMS.txt](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/SHA256SUMS.txt) · [本版验证记录](docs/verification-2.1.0.md) · [历史记录说明](docs/history-2.1.0.md)
+Windows 现代界面需要 WebView2。旧系统需要 .NET Framework 4，兼容界面支持病理文字导入，不含图片 OCR。详见 [Windows 安装说明](docs/windows-installation.md) 和 [兼容版说明](docs/windows-legacy.md)。
 
-替换旧版前退出旧应用，打开后应显示 **2.1.0**。Windows 安装或卸载保留本机历史；如需删除，请先在应用内清空历史。关闭自动保存不会删除旧记录。Win7/XP 的新文件真机验收仍待完成；现代与兼容界面均在托管 Windows NT 10.0.26100.0 验证，不把它视为旧系统真机测试。
+更新前请先退出旧程序。Windows 安装、升级和卸载都会保留本机历史；想删除这些记录，请先在软件中清空历史。关闭自动保存只影响之后的计算，不会删除已有记录。
 
-Android 打开 APK 按系统提示安装。Mac 打开 DMG，将应用拖入 Applications；如系统阻止未公证应用，请查看系统设置“隐私与安全性”中针对该应用的打开选项，不要关闭系统安全功能。
+## 使用方法
 
-Windows 完整界面需要 WebView2；未检测到时自动打开兼容界面（无图片 OCR、自定义单药重新载入）。详情见 [Windows 安装说明](docs/windows-installation.md) 与 [兼容版说明](docs/windows-legacy.md)。
+1. 选择治疗阶段，按分型、方案名或药物名查找方案。
+2. 查看方案说明、药物剂量、给药时间和指南出处。
+3. 按方案要求填写身高、体重；含卡铂的方案还需填写肾功能值，并核对单位和适用性。年龄和住院号可按需填写。
+4. 核对方案和参数，完成确认后计算。结果可以复制，也可以在历史中查看。
 
-## 数据与验证
+首剂与后续剂量、剂量区间和序贯阶段分别显示。修改输入、切换方案或撤销确认后，旧结果会清除。载入历史参数时也会清除旧病理状态、结果和确认，不会直接沿用上次的判断。自定义单药计算保留在单独页面。
 
-- [指南核对记录](docs/guideline-review.md)：源文件哈希、页码映射、纠正项、覆盖边界。
-- [逐项方案核对表](docs/catalogue-review.md)：全部内置条目的药物、数值、频次、疗程和出处，供专业复核。
-- `data/catalogue.json`：三端统一的结构化目录，临床复核状态保留为 pending。
-- [测试记录](tests/README.md)：算术、目录、DOM、签名与安装包检查，及尚未完成的真机/视觉检查。
+病理导入的用法见 [报告匹配说明](docs/report-matching.md)。三端支持简体中文、繁體中文和 English，药物数值、给药时间和计算公式不随语言变化。
 
-目录录入核对和算术回归不代表临床正确性已经获独立验证。指南 PDF 原件、患者信息及签名私钥均不随源码分发。
+## 测试情况
 
-## 开发
+2.1.0 的共享计算、页面和旧引擎对照测试已通过，Windows 和 Mac 的本机历史也完成了原生检查。Android 历史读写及安装仍需手机实测，Win7/XP 的本版文件也还需要真机验证。作者此前在 Win7 x86 和 Win10 x64 上测试通过的是 2.0.0 统一 EXE。
+
+测试均使用虚构数据。技术测试通过不代表临床验证完成，详细结果和未完成项见 [2.1.0 验证记录](docs/verification-2.1.0.md)。
+
+## English
+
+A breast cancer regimen reference and dose calculator for physicians and pharmacists. It brings regimen lookup and dose calculation into one place to reduce repeated searching and manual arithmetic.
+
+The catalogue was compiled from the author-provided 2026 CSCO Breast Cancer Guidelines. It contains 52 regimens, 7 single-drug references and 18 guideline summaries, with doses, schedules, treatment duration and source pages. Pathology text and image import can bring up related drug entries, but users must check the original report and extracted fields. Clinicians choose the treatment regimen. The application does not diagnose or assess whether a treatment is suitable for an individual patient. Its content has not undergone independent clinical validation.
+
+Version 2.1.0 adds local calculation history and optional patient age and hospitalization number. The reviewer-name field has been removed. You can search, view or delete records, or load their parameters for another calculation. Loading a record clears the previous results, pathology context and confirmation, so a new check is required.
+
+Successful calculations are saved automatically unless you turn saving off. Records are encrypted on the device and are not uploaded or synchronized. They exclude pathology text, images and extracted findings. Storage is limited to 500 records and 8 MiB, with a visible error when a limit is reached. Age and hospitalization number do not affect dose formulas; leading zeros are kept.
+
+Downloads are available for Windows, Apple Silicon Mac (macOS 13+) and Android 9+. Windows chooses the modern x64 or x86 compatibility interface automatically. Image OCR requires the modern Windows interface; the compatibility interface supports text import. All three platforms offer Simplified Chinese, Traditional Chinese and English. iOS and Intel Mac builds are not available.
+
+Windows and Mac native history checks passed. Android history and installation still need device testing, as do the new Windows 7/XP files. These are technical checks, not clinical validation. See the [2.1.0 release](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/tag/v2.1.0), [history instructions](docs/history-2.1.0.md) and [verification record](docs/verification-2.1.0.md).
+
+## 源码与开发
+
+- [完整源码 ZIP](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/ChemoDose-2.1.0-source.zip) 与 [SHA256SUMS.txt](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases/download/v2.1.0/SHA256SUMS.txt)
+- [指南核对记录](docs/guideline-review.md) 与 [逐项方案核对表](docs/catalogue-review.md)
+- [构建说明](docs/building.md) 与 [测试记录](tests/README.md)
 
 | 目录 | 内容 |
 | --- | --- |
-| packages/calculation-core | TypeScript 算术核心、方案适配层、回归测试 |
-| data | 有来源页码的共享方案目录 |
-| apps/shared-web | 方案库首页及次级人工核对页 |
-| apps/android、apps/macos、apps/windows | 三端离线原生外壳 |
-| apps/windows-legacy | Windows x86 / .NET Framework 4 兼容外壳 |
-| scripts | 静态数据恢复、指南录入覆盖、网页及原生包构建 |
-| legacy | 算术参考与不完整的历史反编译研究文本 |
+| packages/calculation-core | 计算核心、方案适配和测试 |
+| data | 共用方案目录及翻译 |
+| apps/shared-web | 共用界面和历史查询 |
+| apps/android、apps/macos、apps/windows | 三端原生程序 |
+| apps/windows-legacy、apps/windows-unified | Windows 兼容界面和统一入口 |
+| scripts | 数据整理、构建和验证脚本 |
+| legacy | 旧程序的算术参考与部分反编译研究文本 |
 
-Node.js 24+、Python 3.9+：
+开发需要 Node.js 24+ 和 Python 3.9+：
 
 ```sh
 python3 scripts/build-catalogue.py
@@ -135,15 +91,15 @@ npm run test:ui
 npm run typecheck
 ```
 
-原生构建见 [构建说明](docs/building.md)。生成的浏览器脚本不要单独修改，以免三端公式或数据不一致。
-
-本版源码按 [非商业学术授权](LICENSE) 提供，仅限学术交流，禁止商业用途。这是源码公开项目，不是允许商用的开放源代码许可，不声称提供旧 EXE 的完整对应源码。发布步骤见 [GitHub 项目说明](docs/github-publishing.md)。反馈请使用虚构数据，注明版本、步骤、单位、预期和实际结果。
+不要单独修改生成的浏览器脚本。指南 PDF 原件、患者资料和签名私钥不随源码发布。早期版本的改动可在 [历史发布](https://github.com/jiayi-sketch/breast-cancer-chemo-dose-calculator/releases) 中查看。
 
 ## 作者与授权声明
 
 仅限于学术交流，严禁商业用途  
 版权所有 GitHub @jiayi-sketch
 
-0.2.2 在两个首页、使用说明及 Mac 原生“关于”窗口加入上述两行声明，并替换新版本的 GPL 标记。历史 GPL 版本保留原有授权。Windows v3.0.2 声明修订副本通过单独的静态补丁脚本生成，只有作者署名/使用声明变化，未移植 0.2.2 的方案库或修订原有计算。
+源码按 [非商业学术交流授权](LICENSE) 提供。这项授权禁止商业用途，不是 GPL，也不属于允许商用的开放源代码许可。旧版本仍按各自随附的许可使用。
 
-1.0.1 使用新 Windows 源码加载共享界面，取代旧声明修订副本；三个平台及算术核心版本统一为 1.0.1，指南目录版本保留 2026.10.02，临床复核状态仍为 pending。Windows 运行验证记录见 tests/README.md。
+反馈问题时，请注明版本、操作步骤、预期和实际结果，只使用虚构数据，不上传患者信息。
+
+For academic exchange only. Commercial use is prohibited. Copyright GitHub @jiayi-sketch. Please use fictional data in bug reports and do not upload patient information.
